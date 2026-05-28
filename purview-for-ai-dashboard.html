@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purview for AI — Customer Adoption Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a1a; }
+        .header {
+            background: linear-gradient(135deg, #1b3a6b, #0078d4, #4ea8de);
+            color: white; padding: 18px 32px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .header h1 .logo { font-size: 28px; }
+        .header-subtitle { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .header-controls { display: flex; align-items: center; gap: 16px; }
+        .refresh-info { font-size: 12px; opacity: 0.85; text-align: right; }
+        .refresh-info .time { font-weight: 600; }
+        .auto-refresh-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .auto-refresh-toggle select {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35);
+            color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;
+        }
+        .auto-refresh-toggle select option { color: #333; background: white; }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-right: 4px;
+        }
+        .status-dot.active { background: #4cff4c; animation: pulse 2s infinite; }
+        .status-dot.paused { background: #ffcc00; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .btn-refresh {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35);
+            color: white; padding: 6px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .btn-refresh:hover { background: rgba(255,255,255,0.3); transform: scale(1.03); }
+        .btn-refresh.loading { opacity: 0.6; pointer-events: none; }
+
+        .container { max-width: 1440px; margin: 0 auto; padding: 20px; }
+
+        /* KPI Cards */
+        .kpi-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .kpi-card {
+            background: white; border-radius: 12px; padding: 22px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center;
+            position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .kpi-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .kpi-card:nth-child(1)::before { background: linear-gradient(90deg, #0078d4, #4ea8de); }
+        .kpi-card:nth-child(2)::before { background: linear-gradient(90deg, #107c10, #4caf50); }
+        .kpi-card:nth-child(3)::before { background: linear-gradient(90deg, #5c2d91, #9b59b6); }
+        .kpi-card:nth-child(4)::before { background: linear-gradient(90deg, #ff8c00, #ffc107); }
+        .kpi-value { font-size: 34px; font-weight: 700; color: #0078d4; transition: all 0.3s; }
+        .kpi-card:nth-child(2) .kpi-value { color: #107c10; }
+        .kpi-card:nth-child(3) .kpi-value { color: #5c2d91; }
+        .kpi-card:nth-child(4) .kpi-value { color: #ff8c00; }
+        .kpi-label { font-size: 13px; color: #666; margin-top: 4px; }
+        .kpi-sublabel { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+        /* Charts */
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .charts-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .chart-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: transform 0.2s, box-shadow 0.2s; position: relative;
+        }
+        .chart-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
+        .chart-card h3 { font-size: 14px; color: #444; margin-bottom: 12px; font-weight: 600; }
+        .chart-card.full-width { grid-column: 1 / -1; }
+        .chart-card .chart-hint {
+            position: absolute; top: 14px; right: 16px; font-size: 10px;
+            color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 10px;
+        }
+        .chart-card canvas { cursor: pointer; }
+
+        /* Active filter indicator */
+        .active-filter-bar {
+            display: none; align-items: center; gap: 8px; margin-bottom: 16px;
+            padding: 10px 16px; background: #e6f2ff; border-radius: 8px; border: 1px solid #b3d7ff;
+        }
+        .active-filter-bar.visible { display: flex; }
+        .active-filter-bar .filter-label { font-size: 13px; color: #004e8c; font-weight: 600; }
+        .active-filter-bar .filter-value { font-size: 13px; color: #0078d4; }
+        .active-filter-bar .clear-filter {
+            margin-left: auto; background: #0078d4; color: white; border: none;
+            padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .active-filter-bar .clear-filter:hover { background: #005a9e; }
+
+        /* Filters */
+        .filters-bar {
+            background: white; border-radius: 12px; padding: 14px 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 16px;
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+        }
+        .filters-bar input, .filters-bar select {
+            padding: 7px 12px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 13px; outline: none; transition: border-color 0.2s;
+        }
+        .filters-bar input:focus, .filters-bar select:focus { border-color: #0078d4; box-shadow: 0 0 0 2px rgba(0,120,212,0.1); }
+        .filters-bar input { width: 220px; }
+
+        /* Table */
+        .table-container {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            background: #f8f9fa; padding: 12px 14px; text-align: left;
+            font-weight: 600; color: #555; cursor: pointer; user-select: none;
+            border-bottom: 2px solid #e9ecef; position: sticky; top: 0;
+            transition: background 0.2s;
+        }
+        th:hover { background: #e2e8f0; }
+        th .sort-arrow { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+        th.sorted .sort-arrow { opacity: 1; color: #0078d4; }
+        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover { background: #f0f7ff; cursor: pointer; }
+        tr:active { background: #e0efff; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 11px; font-weight: 600;
+        }
+        .badge-copilot { background: #e6f2ff; color: #0078d4; }
+        .badge-cat { background: #fff3e0; color: #e65100; }
+        .badge-mip { background: #e8f5e9; color: #2e7d32; }
+
+        /* Detail Panel */
+        .detail-overlay {
+            display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0,0,0,0.4); z-index: 1000; backdrop-filter: blur(2px);
+        }
+        .detail-overlay.open { display: block; }
+        .detail-panel {
+            position: fixed; top: 0; right: 0; bottom: 0; width: 520px;
+            background: white; box-shadow: -4px 0 30px rgba(0,0,0,0.2);
+            overflow-y: auto; padding: 28px; z-index: 1001;
+            transform: translateX(100%); transition: transform 0.3s ease;
+        }
+        .detail-panel.open { transform: translateX(0); }
+        .detail-panel h2 { font-size: 20px; margin-bottom: 16px; color: #1b3a6b; }
+        .detail-section { margin-bottom: 20px; }
+        .detail-section h4 { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .detail-item { font-size: 13px; }
+        .detail-item .label { color: #888; font-size: 11px; }
+        .detail-item .value { font-weight: 600; }
+        .policy-list { list-style: none; }
+        .policy-list li {
+            padding: 8px 12px; margin: 4px 0; background: #f5f7fa;
+            border-radius: 6px; font-size: 12px; border-left: 3px solid #0078d4;
+            transition: background 0.2s;
+        }
+        .policy-list li:hover { background: #e6f2ff; }
+        .close-btn {
+            position: absolute; top: 16px; right: 16px; background: none;
+            border: none; font-size: 28px; cursor: pointer; color: #999;
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: #333; }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.75); z-index: 2000;
+            justify-content: center; align-items: center; backdrop-filter: blur(2px);
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 44px; height: 44px; border: 4px solid #e0e0e0;
+            border-top: 4px solid #0078d4; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Trend chart full width */
+        .trend-section { margin-bottom: 24px; }
+
+        /* Tooltip on chart click */
+        .chart-tooltip-info {
+            font-size: 11px; color: #666; margin-top: 8px; text-align: center;
+            font-style: italic; opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .chart-card:hover .chart-tooltip-info { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+    <div class="header">
+        <div>
+            <h1><span class="logo">🛡️</span> Purview for AI — Customer Adoption Dashboard</h1>
+            <div class="header-subtitle">Real-time monitoring · Last 12 months of data · Auto-refresh enabled</div>
+        </div>
+        <div class="header-controls">
+            <div class="auto-refresh-toggle">
+                <span class="status-dot active" id="statusDot"></span>
+                <span>Auto-refresh:</span>
+                <select id="refreshInterval" onchange="updateRefreshInterval()">
+                    <option value="0">Off</option>
+                    <option value="60">1 min</option>
+                    <option value="300" selected>5 min</option>
+                    <option value="600">10 min</option>
+                    <option value="1800">30 min</option>
+                </select>
+            </div>
+            <div class="refresh-info">
+                <div>Last refresh: <span class="time" id="lastRefresh">—</span></div>
+                <div>Next: <span id="nextRefresh">—</span></div>
+            </div>
+            <button class="btn-refresh" id="btnRefresh" onclick="refreshAll()">⟳ Refresh Now</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- KPI Cards -->
+        <div class="kpi-bar">
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiTenants">—</div>
+                <div class="kpi-label">Total Tenants</div>
+                <div class="kpi-sublabel">Active in last 12 months</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiPolicies">—</div>
+                <div class="kpi-label">Policy Types</div>
+                <div class="kpi-sublabel">Distinct policies observed</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiSnapshot">—</div>
+                <div class="kpi-label">Latest Data</div>
+                <div class="kpi-sublabel">Most recent snapshot</div>
+            </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="trend-section">
+            <div class="chart-card">
+                <h3>📈 Adoption Trend (12 Months)</h3>
+                <span class="chart-hint">🔍 Scroll to zoom · Drag to pan</span>
+                <canvas id="trendChart" height="80"></canvas>
+                <div class="chart-tooltip-info">Use mouse wheel to zoom, drag to pan. Double-click to reset.</div>
+            </div>
+        </div>
+
+        <!-- Active filter from chart click -->
+        <div class="active-filter-bar" id="activeFilterBar">
+            <span class="filter-label">🔗 Chart Filter:</span>
+            <span class="filter-value" id="chartFilterText"></span>
+            <button class="clear-filter" onclick="clearChartFilter()">✕ Clear Filter</button>
+        </div>
+
+        <!-- Row 1: Top Sessions + Policies -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>🏆 Top Customers by AI Hub Sessions</h3>
+                <span class="chart-hint">Click bar to view details</span>
+                <canvas id="topCustomersChart" height="160"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🛡️ Active Policies Distribution</h3>
+                <span class="chart-hint">Click bar to filter table</span>
+                <canvas id="policiesChart" height="160"></canvas>
+            </div>
+        </div>
+
+        <!-- Row 2: Customer Profile (Segment, Region, Industry) -->
+        <div class="charts-grid-3">
+            <div class="chart-card">
+                <h3>👥 Customer Segments</h3>
+                <span class="chart-hint">Click slice to filter</span>
+                <canvas id="segmentChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🌍 Geographic Distribution</h3>
+                <span class="chart-hint">Click slice to filter</span>
+                <canvas id="regionChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🏭 Industry Breakdown</h3>
+                <span class="chart-hint">Click bar to filter</span>
+                <canvas id="industryChart" height="160"></canvas>
+            </div>
+        </div>
+
+        <!-- Row 3: UI Components + Licenses -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>🖥️ AI Hub Page Engagement</h3>
+                <span class="chart-hint">Click bar for details</span>
+                <canvas id="uiComponentsChart" height="140"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🔑 License Coverage</h3>
+                <span class="chart-hint">Click bar to filter table</span>
+                <canvas id="licensesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Search customer or tenant ID..." oninput="applyFilters()">
+            <select id="filterSegment" onchange="applyFilters()"><option value="">All Segments</option></select>
+            <select id="filterRegion" onchange="applyFilters()"><option value="">All Regions</option></select>
+            <select id="filterCopilot" onchange="applyFilters()">
+                <option value="">Copilot: All</option>
+                <option value="true">Has Copilot</option>
+                <option value="false">No Copilot</option>
+            </select>
+            <select id="filterCAT" onchange="applyFilters()">
+                <option value="">CAT: All</option>
+                <option value="true">CAT Member</option>
+                <option value="false">Non-CAT</option>
+            </select>
+            <span style="margin-left:auto; font-size:12px; color:#888;" id="tableCount"></span>
+        </div>
+
+        <!-- Customer Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('Name')">Customer <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('TenantId')">Tenant ID <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('Sessions')">AI Hub Sessions <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('E5PAU')">E5 PAU <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('Policies')">Policies <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('Segment')">Segment <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('Region')">Region <span class="sort-arrow">▼</span></th>
+                        <th>Licenses</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+    <div class="detail-panel" id="detailPanel">
+        <button class="close-btn" onclick="closeDetail()">&times;</button>
+        <div id="detailContent"></div>
+    </div>
+
+    <script>
+    const API_BASE = 'http://127.0.0.1:8050/api';
+    let allCustomers = [];
+    let filteredCustomers = [];
+    let sortCol = 'Sessions';
+    let sortDir = 'desc';
+    let refreshTimer = null;
+    let nextRefreshTime = null;
+    let countdownTimer = null;
+    let chartFilter = null; // {type: 'segment'|'region'|'industry'|'license', value: '...'}
+
+    // Chart instances
+    let trendChart, topChart, segmentChart, regionChart, industryChart, policiesChart, uiComponentsChart, licensesChart;
+
+    // Cached data for interactive filtering
+    let cachedTopSessions = [];
+    let cachedPolicies = [];
+    let cachedUIComponents = [];
+
+    // ─── Auto-Refresh Engine ───────────────────────────────────────
+    function updateRefreshInterval() {
+        const seconds = parseInt(document.getElementById('refreshInterval').value);
+        clearInterval(refreshTimer);
+        clearInterval(countdownTimer);
+
+        const dot = document.getElementById('statusDot');
+        if (seconds === 0) {
+            dot.className = 'status-dot paused';
+            document.getElementById('nextRefresh').textContent = 'Paused';
+            return;
+        }
+
+        dot.className = 'status-dot active';
+        nextRefreshTime = Date.now() + seconds * 1000;
+        refreshTimer = setInterval(() => {
+            refreshAll();
+            nextRefreshTime = Date.now() + seconds * 1000;
+        }, seconds * 1000);
+
+        countdownTimer = setInterval(updateCountdown, 1000);
+    }
+
+    function updateCountdown() {
+        if (!nextRefreshTime) return;
+        const remaining = Math.max(0, Math.round((nextRefreshTime - Date.now()) / 1000));
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        document.getElementById('nextRefresh').textContent =
+            mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+
+    // ─── Data Fetching ─────────────────────────────────────────────
+    async function fetchJSON(endpoint) {
+        const resp = await fetch(`${API_BASE}${endpoint}`);
+        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+        return resp.json();
+    }
+
+    async function refreshAll() {
+        const btn = document.getElementById('btnRefresh');
+        btn.classList.add('loading');
+        btn.textContent = '⟳ Loading...';
+        document.getElementById('loadingOverlay').classList.add('active');
+
+        try {
+            const [summary, customers, trends, topSessions, policies, uiComponents, licenses, profile] = await Promise.all([
+                fetchJSON('/summary'),
+                fetchJSON('/customers?top=5000'),
+                fetchJSON('/trends?days=365'),
+                fetchJSON('/top-sessions?top=15'),
+                fetchJSON('/policies'),
+                fetchJSON('/ui-components'),
+                fetchJSON('/licenses'),
+                fetchJSON('/profile')
+            ]);
+
+            updateKPIs(summary);
+            updateCustomers(customers.customers);
+            updateTrendChart(trends.trends);
+            updateTopSessionsChart(topSessions.customers);
+            updatePoliciesChart(policies.policies);
+            updateUIComponentsChart(uiComponents.components);
+            updateLicensesChart(licenses.licenses);
+            updateProfileCharts(profile);
+            updateLastRefresh();
+
+            // Cache for interactivity
+            cachedTopSessions = topSessions.customers;
+            cachedPolicies = policies.policies;
+            cachedUIComponents = uiComponents.components;
+
+            const seconds = parseInt(document.getElementById('refreshInterval').value);
+            if (seconds > 0) nextRefreshTime = Date.now() + seconds * 1000;
+        } catch (err) {
+            console.error('Refresh failed:', err);
+            document.getElementById('lastRefresh').textContent = '⚠️ Error';
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = '⟳ Refresh Now';
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+    }
+
+    function updateLastRefresh() {
+        const now = new Date();
+        document.getElementById('lastRefresh').textContent =
+            now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ─── KPIs ──────────────────────────────────────────────────────
+    function updateKPIs(data) {
+        animateNumber('kpiTenants', data.TotalTenants || 0);
+        animateNumber('kpiPolicies', data.TotalPolicies || 0);
+        if (data.SnapshotDate) {
+            const d = new Date(data.SnapshotDate);
+            document.getElementById('kpiSnapshot').textContent = d.toLocaleDateString();
+        }
+    }
+
+    function animateNumber(elementId, target) {
+        const el = document.getElementById(elementId);
+        const start = parseInt(el.textContent.replace(/,/g, '')) || 0;
+        if (start === target) { el.textContent = target.toLocaleString(); return; }
+        const duration = 800;
+        const startTime = performance.now();
+        function step(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            const current = Math.round(start + (target - start) * eased);
+            el.textContent = current.toLocaleString();
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    // ─── Chart Interactivity: Click-to-Filter ─────────────────────
+    function setChartFilter(type, value) {
+        chartFilter = { type, value };
+        document.getElementById('chartFilterText').textContent = `${type}: ${value}`;
+        document.getElementById('activeFilterBar').classList.add('visible');
+        applyFilters();
+    }
+
+    function clearChartFilter() {
+        chartFilter = null;
+        document.getElementById('activeFilterBar').classList.remove('visible');
+        applyFilters();
+    }
+
+    // ─── Customers Table ───────────────────────────────────────────
+    function updateCustomers(customers) {
+        allCustomers = customers;
+        populateFilters();
+        applyFilters();
+    }
+
+    function populateFilters() {
+        const segments = [...new Set(allCustomers.map(c => c.Segment))].sort();
+        const regions = [...new Set(allCustomers.map(c => c.Region))].sort();
+
+        const segSel = document.getElementById('filterSegment');
+        const regSel = document.getElementById('filterRegion');
+        segSel.innerHTML = '<option value="">All Segments</option>' +
+            segments.map(s => `<option value="${s}">${s}</option>`).join('');
+        regSel.innerHTML = '<option value="">All Regions</option>' +
+            regions.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const segment = document.getElementById('filterSegment').value;
+        const region = document.getElementById('filterRegion').value;
+        const copilot = document.getElementById('filterCopilot').value;
+        const cat = document.getElementById('filterCAT').value;
+
+        filteredCustomers = allCustomers.filter(c => {
+            if (search && !c.Name.toLowerCase().includes(search) && !c.TenantId.toLowerCase().includes(search)) return false;
+            if (segment && c.Segment !== segment) return false;
+            if (region && c.Region !== region) return false;
+            if (copilot === 'true' && !c.HasCopilot) return false;
+            if (copilot === 'false' && c.HasCopilot) return false;
+            if (cat === 'true' && !c.IsCAT) return false;
+            if (cat === 'false' && c.IsCAT) return false;
+
+            // Chart-based filter
+            if (chartFilter) {
+                switch (chartFilter.type) {
+                    case 'Segment': return c.Segment === chartFilter.value;
+                    case 'Region': return c.Region === chartFilter.value;
+                    case 'Industry': return c.Industry === chartFilter.value;
+                    case 'License':
+                        if (chartFilter.value === 'M365 Copilot') return c.HasCopilot;
+                        if (chartFilter.value === 'MIP') return c.HasMIP;
+                        if (chartFilter.value === 'DLP') return c.HasDLP;
+                        return true;
+                }
+            }
+            return true;
+        });
+
+        // Sort
+        filteredCustomers.sort((a, b) => {
+            let va = a[sortCol], vb = b[sortCol];
+            if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        renderTable();
+        document.getElementById('tableCount').textContent =
+            `Showing ${filteredCustomers.length.toLocaleString()} of ${allCustomers.length.toLocaleString()} tenants`;
+    }
+
+    function sortTable(col) {
+        if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        else { sortCol = col; sortDir = 'desc'; }
+        applyFilters();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('customerTableBody');
+        const display = filteredCustomers.slice(0, 200); // Virtual scroll limit
+        tbody.innerHTML = display.map((c, i) => `
+            <tr onclick="showDetail('${c.TenantId}')">
+                <td><strong>${c.Name}</strong></td>
+                <td style="font-size:11px;color:#666;font-family:monospace;">${c.TenantId}</td>
+                <td><strong style="color:#5c2d91;">${(c.Sessions || 0).toLocaleString()}</strong></td>
+                <td><strong style="color:#0078d4;">${(c.E5PAU || 0).toLocaleString()}</strong></td>
+                <td>${c.Policies}</td>
+                <td><span style="cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation(); setChartFilter('Segment','${c.Segment}')">${c.Segment}</span></td>
+                <td><span style="cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation(); setChartFilter('Region','${c.Region}')">${c.Region}</span></td>
+                <td>
+                    ${c.HasCopilot ? '<span class="badge badge-copilot">Copilot</span> ' : ''}
+                    ${c.HasMIP ? '<span class="badge badge-mip">MIP</span> ' : ''}
+                    ${c.IsCAT ? '<span class="badge badge-cat">CAT</span> ' : ''}
+                </td>
+            </tr>
+        `).join('');
+        if (filteredCustomers.length > 200) {
+            tbody.innerHTML += `<tr><td colspan="8" style="text-align:center;color:#888;padding:16px;">Showing top 200 of ${filteredCustomers.length.toLocaleString()} — use filters to narrow down</td></tr>`;
+        }
+    }
+
+    // ─── Charts ────────────────────────────────────────────────────
+    function updateTopSessionsChart(data) {
+        if (!data || data.length === 0) return;
+        if (topChart) topChart.destroy();
+        topChart = new Chart(document.getElementById('topCustomersChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(c => c.Name.length > 22 ? c.Name.substring(0, 20) + '…' : c.Name),
+                datasets: [{
+                    label: 'AI Hub Sessions',
+                    data: data.map(c => c.TotalSessions),
+                    backgroundColor: data.map((_, i) => i === 0 ? '#1b3a6b' : i < 3 ? '#0078d4' : '#5ba3d9'),
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#ff8c00'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.x.toLocaleString()} sessions`,
+                            afterLabel: ctx => `Tenant: ${data[ctx.dataIndex].TenantId}`
+                        }
+                    }
+                },
+                scales: { x: { title: { display: true, text: 'Total Sessions (12 months)' } } },
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        showDetail(data[idx].TenantId);
+                    }
+                }
+            }
+        });
+    }
+
+    function updatePoliciesChart(data) {
+        if (!data || data.length === 0) return;
+        if (policiesChart) policiesChart.destroy();
+        const cleaned = data.slice(0, 12).map(p => ({
+            ...p,
+            ShortName: p.Feature.replace(/DSPM for AI[\s:-]*/g, '').replace(/Purview for AI[\s:-]*/g, '').substring(0, 40)
+        }));
+        policiesChart = new Chart(document.getElementById('policiesChart'), {
+            type: 'bar',
+            data: {
+                labels: cleaned.map(p => p.ShortName),
+                datasets: [{
+                    label: 'Tenants',
+                    data: cleaned.map(p => p.Tenants),
+                    backgroundColor: '#5c2d91',
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#9b59b6'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.x.toLocaleString()} tenants`
+                        }
+                    }
+                },
+                scales: { x: { title: { display: true, text: 'Tenants with Policy Active' } } },
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        // Filter table to customers with this policy
+                        const policyName = data[idx].Feature;
+                        chartFilter = { type: 'Policy', value: cleaned[idx].ShortName, fullValue: policyName };
+                        document.getElementById('chartFilterText').textContent = `Policy: ${cleaned[idx].ShortName}`;
+                        document.getElementById('activeFilterBar').classList.add('visible');
+                        // Re-filter including policy check
+                        filteredCustomers = allCustomers.filter(c =>
+                            c.PolicyList && c.PolicyList.some(p => p === policyName)
+                        );
+                        filteredCustomers.sort((a, b) => (b.Sessions||0) - (a.Sessions||0));
+                        renderTable();
+                        document.getElementById('tableCount').textContent =
+                            `Showing ${filteredCustomers.length.toLocaleString()} tenants with this policy`;
+                    }
+                }
+            }
+        });
+    }
+
+    function updateUIComponentsChart(data) {
+        if (!data || data.length === 0) return;
+        if (uiComponentsChart) uiComponentsChart.destroy();
+        const colors = ['#0078d4','#107c10','#5c2d91','#ff8c00','#d83b01','#008272','#b4009e','#004e8c','#498205','#881798','#ca5010','#69797e'];
+        uiComponentsChart = new Chart(document.getElementById('uiComponentsChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(c => c.Page.replace('purviewforaidatapage@purviewforai', 'Data Page').replace('Page', '').substring(0, 30)),
+                datasets: [{
+                    label: 'Sessions',
+                    data: data.map(c => c.Sessions),
+                    backgroundColor: colors.slice(0, data.length),
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#ff8c00'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.x.toLocaleString()} sessions`,
+                            afterLabel: ctx => `${data[ctx.dataIndex].Tenants.toLocaleString()} distinct tenants`
+                        }
+                    }
+                },
+                scales: { x: { title: { display: true, text: 'Sessions (12 months)' } } },
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        alert(`📊 ${data[idx].Page}\n\nSessions: ${data[idx].Sessions.toLocaleString()}\nTenants: ${data[idx].Tenants.toLocaleString()}`);
+                    }
+                }
+            }
+        });
+    }
+
+    function updateLicensesChart(data) {
+        if (!data || !data.Total) return;
+        if (licensesChart) licensesChart.destroy();
+        const total = data.Total;
+        const licenses = [
+            { name: 'M365 Copilot', count: data.HasCopilot, key: 'HasCopilot' },
+            { name: 'MIP', count: data.HasMIP, key: 'HasMIP' },
+            { name: 'DLP', count: data.HasDLP, key: 'HasDLP' },
+            { name: 'MIP Premium', count: data.HasMIPPremium, key: 'HasMIPPremium' },
+            { name: 'Endpoint DLP', count: data.HasEndPointDLP, key: 'HasEndPointDLP' },
+            { name: 'Teams DLP', count: data.HasTeamsDLP, key: 'HasTeamsDLP' },
+            { name: 'Comm Compliance', count: data.HasCommunicationCompliance, key: 'HasCommCompliance' }
+        ];
+        licensesChart = new Chart(document.getElementById('licensesChart'), {
+            type: 'bar',
+            data: {
+                labels: licenses.map(l => l.name),
+                datasets: [{
+                    label: 'Tenants',
+                    data: licenses.map(l => l.count),
+                    backgroundColor: ['#0078d4','#107c10','#5c2d91','#008272','#ff8c00','#d83b01','#b4009e'],
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#1b3a6b'
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.y.toLocaleString()} of ${total.toLocaleString()} tenants`,
+                            afterLabel: ctx => `${Math.round(ctx.parsed.y/total*100)}% coverage`
+                        }
+                    }
+                },
+                scales: {
+                    y: { title: { display: true, text: 'Tenants' }, max: total },
+                    x: { ticks: { maxRotation: 45 } }
+                },
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        setChartFilter('License', licenses[idx].name);
+                    }
+                }
+            }
+        });
+    }
+
+    function updateProfileCharts(data) {
+        if (!data) return;
+
+        // Segment doughnut - interactive
+        if (data.segments && data.segments.length > 0) {
+            if (segmentChart) segmentChart.destroy();
+            const segLabels = data.segments.map(s => s.CustomerSegmentGroup || 'Unknown');
+            segmentChart = new Chart(document.getElementById('segmentChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: segLabels,
+                    datasets: [{ data: data.segments.map(s => s.Tenants),
+                        backgroundColor: ['#0078d4','#107c10','#5c2d91','#ff8c00','#d83b01','#008272','#b4009e'],
+                        hoverOffset: 8 }]
+                },
+                options: {
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => {
+                                    const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                                    return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${Math.round(ctx.parsed/total*100)}%)`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            setChartFilter('Segment', segLabels[elements[0].index]);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Region doughnut - interactive
+        if (data.regions && data.regions.length > 0) {
+            if (regionChart) regionChart.destroy();
+            const regLabels = data.regions.slice(0, 10).map(r => r.RegionName || 'Unknown');
+            regionChart = new Chart(document.getElementById('regionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: regLabels,
+                    datasets: [{ data: data.regions.slice(0, 10).map(r => r.Tenants),
+                        backgroundColor: ['#0078d4','#107c10','#5c2d91','#ff8c00','#d83b01','#008272','#b4009e','#004e8c','#498205','#881798'],
+                        hoverOffset: 8 }]
+                },
+                options: {
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => {
+                                    const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                                    return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${Math.round(ctx.parsed/total*100)}%)`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            setChartFilter('Region', regLabels[elements[0].index]);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Industry horizontal bar - interactive
+        if (data.industries && data.industries.length > 0) {
+            if (industryChart) industryChart.destroy();
+            const indLabels = data.industries.map(i => (i.IndustryName || 'Unknown'));
+            industryChart = new Chart(document.getElementById('industryChart'), {
+                type: 'bar',
+                data: {
+                    labels: indLabels.map(l => l.substring(0, 25)),
+                    datasets: [{ data: data.industries.map(i => i.Tenants), backgroundColor: '#008272', borderRadius: 4, hoverBackgroundColor: '#00b294' }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => `${ctx.parsed.x.toLocaleString()} tenants` } }
+                    },
+                    scales: { x: { title: { display: true, text: 'Tenants' } } },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            setChartFilter('Industry', indLabels[elements[0].index]);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function updateTrendChart(trends) {
+        if (!trends || trends.length === 0) return;
+        const labels = trends.map(t => {
+            const d = new Date(t.SnapshotDate);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        });
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Tenants', data: trends.map(t => t.Tenants), borderColor: '#0078d4',
+                      backgroundColor: 'rgba(0,120,212,0.08)', fill: true, tension: 0.3, yAxisID: 'y',
+                      pointRadius: 3, pointHoverRadius: 6, pointHoverBackgroundColor: '#0078d4' }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            title: ctx => `📅 ${ctx[0].label}`,
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`
+                        }
+                    },
+                    zoom: {
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x'
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x'
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 12 } },
+                    y: { position: 'left', title: { display: true, text: 'Tenants' } }
+                }
+            }
+        });
+    }
+
+    // ─── Detail Panel ──────────────────────────────────────────────
+    async function showDetail(tenantId) {
+        document.getElementById('detailOverlay').classList.add('open');
+        document.getElementById('detailPanel').classList.add('open');
+        document.getElementById('detailContent').innerHTML = '<p style="color:#888;">Loading customer details...</p>';
+
+        try {
+            const data = await fetchJSON(`/customer/${tenantId}`);
+            const p = data.profile;
+            const policies = data.policies || [];
+            const engagement = data.engagement || [];
+
+            document.getElementById('detailContent').innerHTML = `
+                <h2>${p.TenantName || tenantId}</h2>
+                <p style="font-size:11px;color:#888;font-family:monospace;margin-bottom:16px;">${tenantId}</p>
+                <div class="detail-section">
+                    <h4>Customer Profile</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="label">Segment</div><div class="value">${p.CustomerSegmentGroup || '—'}</div></div>
+                        <div class="detail-item"><div class="label">Sub-Segment</div><div class="value">${p.SubSegmentName || '—'}</div></div>
+                        <div class="detail-item"><div class="label">Region</div><div class="value">${p.RegionName || '—'}</div></div>
+                        <div class="detail-item"><div class="label">Country</div><div class="value">${p.CountryName || '—'}</div></div>
+                        <div class="detail-item"><div class="label">Industry</div><div class="value">${p.IndustryName || '—'}</div></div>
+                        <div class="detail-item"><div class="label">DSP CAT</div><div class="value">${p.IsDSPCAT ? '✅ Yes' : '❌ No'}</div></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>License Coverage</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="label">M365 Copilot</div><div class="value">${p.HasM365Copilot ? '✅' : '❌'}</div></div>
+                        <div class="detail-item"><div class="label">MIP</div><div class="value">${p.HasMIP ? '✅' : '❌'}</div></div>
+                        <div class="detail-item"><div class="label">DLP</div><div class="value">${p.HasDLP ? '✅' : '❌'}</div></div>
+                        <div class="detail-item"><div class="label">MIP Premium</div><div class="value">${p.HasMIPPremium ? '✅' : '❌'}</div></div>
+                        <div class="detail-item"><div class="label">Endpoint DLP</div><div class="value">${p.HasEndPointDLP ? '✅' : '❌'}</div></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>Active Purview for AI Policies (${policies.length})</h4>
+                    <ul class="policy-list">
+                        ${policies.map(pl => `<li>${pl.Feature.replace(/DSPM for AI[\s:-]*/g, '')}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="detail-section">
+                    <h4>AI Hub Engagement</h4>
+                    ${engagement.length > 0 ?
+                        `<ul class="policy-list">${engagement.map(e => `<li>${e.Page} <span style="float:right;color:#5c2d91;font-weight:600">${e.Sessions.toLocaleString()} sessions</span></li>`).join('')}</ul>`
+                        : '<p style="color:#888;font-size:13px;">No AI Hub engagement data available</p>'}
+                </div>
+            `;
+        } catch (err) {
+            document.getElementById('detailContent').innerHTML =
+                `<p style="color:red;">Failed to load details: ${err.message}</p>`;
+        }
+    }
+
+    function closeDetail() {
+        document.getElementById('detailOverlay').classList.remove('open');
+        document.getElementById('detailPanel').classList.remove('open');
+    }
+
+    // ─── Keyboard shortcuts ────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDetail();
+            clearChartFilter();
+        }
+        if (e.key === 'r' && e.ctrlKey) {
+            e.preventDefault();
+            refreshAll();
+        }
+    });
+
+    // ─── Init ──────────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+        refreshAll();
+        updateRefreshInterval();
+    });
+    </script>
+</body>
+</html>
