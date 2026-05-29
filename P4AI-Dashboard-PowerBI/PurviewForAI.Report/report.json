@@ -1,0 +1,174 @@
+{
+  "config": "{\"version\":\"5.66\",\"themeCollection\":{\"baseTheme\":{\"name\":\"CY24SU06\",\"type\":2,\"version\":{\"visual\":\"1.8.89\",\"report\":\"2.0.89\",\"page\":\"1.3.89\"}}},\"activeSectionIndex\":0,\"linguisticSchemaSyncVersion\":2}",
+  "layoutOptimization": 0,
+  "publicCustomVisuals": [],
+  "sections": [
+    {
+      "config": "{}",
+      "displayName": "Customer Details",
+      "displayOption": 1,
+      "height": 720.00,
+      "name": "CustomerDetailPage",
+      "ordinal": 2,
+      "visualContainers": [
+        {
+          "config": "{\"name\":\"customerTable\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":10,\"z\":0,\"width\":1240,\"height\":700}}],\"singleVisual\":{\"visualType\":\"tableEx\",\"objects\":{\"values\":[{\"properties\":{}}]}}}",
+          "filters": "[]",
+          "height": 700.00,
+          "width": 1240.00,
+          "x": 20.00,
+          "y": 10.00,
+          "z": 0.00
+        }
+      ],
+      "width": 1280.00
+    },
+    {
+      "config": "{}",
+      "displayName": "Overview",
+      "displayOption": 1,
+      "height": 720.00,
+      "name": "OverviewPage",
+      "visualContainers": [
+        {
+          "config": "{\"name\":\"industryChart\",\"layouts\":[{\"id\":0,\"position\":{\"x\":860,\"y\":440,\"z\":10000,\"width\":400,\"height\":260}}],\"singleVisual\":{\"visualType\":\"donutChart\",\"hasDefaultSort\":true,\"objects\":{\"legend\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 260.00,
+          "width": 400.00,
+          "x": 860.00,
+          "y": 440.00,
+          "z": 10000.00
+        },
+        {
+          "config": "{\"name\":\"kpiAIApps\",\"layouts\":[{\"id\":0,\"position\":{\"x\":1020,\"y\":60,\"z\":5000,\"width\":240,\"height\":100}}],\"singleVisual\":{\"visualType\":\"card\",\"projections\":{\"Values\":[{\"queryRef\":\"CountNonNull(Customers.HasCopilotStudio)\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"HasCopilotStudio\"}},\"Function\":5},\"Name\":\"CountNonNull(Customers.HasCopilotStudio)\",\"NativeReferenceName\":\"Count of HasCopilotStudio\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"HasCopilotStudio\"}},\"Function\":5}}}]},\"hasDefaultSort\":true}}",
+          "filters": "[]",
+          "height": 100.00,
+          "width": 240.00,
+          "x": 1020.00,
+          "y": 60.00,
+          "z": 5000.00
+        },
+        {
+          "config": "{\"name\":\"kpiCopilot\",\"layouts\":[{\"id\":0,\"position\":{\"x\":520,\"y\":60,\"z\":3000,\"width\":240,\"height\":100}}],\"singleVisual\":{\"visualType\":\"card\",\"projections\":{\"Values\":[{\"queryRef\":\"Sum(Customers.M365CopilotSeats)\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"M365CopilotSeats\"}},\"Function\":0},\"Name\":\"Sum(Customers.M365CopilotSeats)\",\"NativeReferenceName\":\"M365CopilotSeats\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"M365CopilotSeats\"}},\"Function\":0}}}]},\"hasDefaultSort\":true}}",
+          "filters": "[]",
+          "height": 100.00,
+          "width": 240.00,
+          "x": 520.00,
+          "y": 60.00,
+          "z": 3000.00
+        },
+        {
+          "config": "{\"name\":\"kpiE5\",\"layouts\":[{\"id\":0,\"position\":{\"x\":770,\"y\":60,\"z\":4000,\"width\":240,\"height\":100}}],\"singleVisual\":{\"visualType\":\"card\",\"projections\":{\"Values\":[{\"queryRef\":\"Customers.S500 Count\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"S500 Count\"},\"Name\":\"Customers.S500 Count\",\"NativeReferenceName\":\"S500 Count\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"S500 Count\"}}}]},\"hasDefaultSort\":true}}",
+          "filters": "[]",
+          "height": 100.00,
+          "width": 240.00,
+          "x": 770.00,
+          "y": 60.00,
+          "z": 4000.00
+        },
+        {
+          "config": "{\"name\":\"kpiSessions\",\"layouts\":[{\"id\":0,\"position\":{\"x\":270,\"y\":60,\"z\":2000,\"width\":240,\"height\":100}}],\"singleVisual\":{\"visualType\":\"card\",\"projections\":{\"Values\":[{\"queryRef\":\"Sum(Customers.Policies)\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Policies\"}},\"Function\":0},\"Name\":\"Sum(Customers.Policies)\",\"NativeReferenceName\":\"Policies\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Policies\"}},\"Function\":0}}}]},\"hasDefaultSort\":true}}",
+          "filters": "[]",
+          "height": 100.00,
+          "width": 240.00,
+          "x": 270.00,
+          "y": 60.00,
+          "z": 2000.00
+        },
+        {
+          "config": "{\"name\":\"kpiTenants\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":60,\"z\":1000,\"width\":240,\"height\":100}}],\"singleVisual\":{\"visualType\":\"card\",\"projections\":{\"Values\":[{\"queryRef\":\"Customers.Total Tenants\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Total Tenants\"},\"Name\":\"Customers.Total Tenants\",\"NativeReferenceName\":\"Total Tenants\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Total Tenants\"}}}]},\"hasDefaultSort\":true,\"objects\":{\"labels\":[{\"properties\":{\"fontSize\":{\"expr\":{\"Literal\":{\"Value\":\"28D\"}}}}}],\"categoryLabels\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 100.00,
+          "width": 240.00,
+          "x": 20.00,
+          "y": 60.00,
+          "z": 1000.00
+        },
+        {
+          "config": "{\"name\":\"regionChart\",\"layouts\":[{\"id\":0,\"position\":{\"x\":440,\"y\":440,\"z\":9000,\"width\":400,\"height\":260}}],\"singleVisual\":{\"visualType\":\"donutChart\",\"projections\":{\"Y\":[{\"queryRef\":\"Sum(Customers.Policies)\"},{\"queryRef\":\"Sum(Policies.TenantCount)\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0},{\"Name\":\"p\",\"Entity\":\"Policies\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Policies\"}},\"Function\":0},\"Name\":\"Sum(Customers.Policies)\",\"NativeReferenceName\":\"Policies\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"p\"}},\"Property\":\"TenantCount\"}},\"Function\":0},\"Name\":\"Sum(Policies.TenantCount)\",\"NativeReferenceName\":\"TenantCount\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Policies\"}},\"Function\":0}}}]},\"hasDefaultSort\":true,\"objects\":{\"legend\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 260.00,
+          "width": 400.00,
+          "x": 440.00,
+          "y": 440.00,
+          "z": 9000.00
+        },
+        {
+          "config": "{\"name\":\"segmentChart\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":440,\"z\":8000,\"width\":400,\"height\":260}}],\"singleVisual\":{\"visualType\":\"donutChart\",\"projections\":{\"Y\":[{\"queryRef\":\"Sum(Customers.Sessions)\"}],\"Category\":[{\"queryRef\":\"Customers.TenantName\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Sessions\"}},\"Function\":0},\"Name\":\"Sum(Customers.Sessions)\",\"NativeReferenceName\":\"Sessions\"},{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"TenantName\"},\"Name\":\"Customers.TenantName\",\"NativeReferenceName\":\"TenantName\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Sessions\"}},\"Function\":0}}}]},\"hasDefaultSort\":true,\"objects\":{\"legend\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 260.00,
+          "width": 400.00,
+          "x": 20.00,
+          "y": 440.00,
+          "z": 8000.00
+        },
+        {
+          "config": "{\"name\":\"title\",\"layouts\":[{\"id\":0,\"position\":{\"x\":0,\"y\":0,\"z\":0,\"width\":1280,\"height\":50}}],\"singleVisual\":{\"visualType\":\"textbox\",\"objects\":{\"general\":[{\"properties\":{\"paragraphs\":[{\"textRuns\":[{\"value\":\"Purview for AI — Customer Adoption Dashboard\",\"textStyle\":{\"fontFamily\":\"Segoe UI Semibold\",\"fontSize\":\"20px\"}}]}]}}]}}}",
+          "filters": "[]",
+          "height": 50.00,
+          "width": 1280.00,
+          "x": 0.00,
+          "y": 0.00,
+          "z": 0.00
+        },
+        {
+          "config": "{\"name\":\"topSessionsChart\",\"layouts\":[{\"id\":0,\"position\":{\"x\":660,\"y\":170,\"z\":7000,\"width\":600,\"height\":260}}],\"singleVisual\":{\"visualType\":\"barChart\",\"projections\":{},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"TenantName\"},\"Name\":\"name\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Sessions\"}},\"Function\":0},\"Name\":\"sessions\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Sessions\"}},\"Function\":0}}}],\"Top\":15},\"objects\":{\"categoryAxis\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 260.00,
+          "width": 600.00,
+          "x": 660.00,
+          "y": 170.00,
+          "z": 7000.00
+        },
+        {
+          "config": "{\"name\":\"trendChart\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":170,\"z\":6000,\"width\":620,\"height\":260}}],\"singleVisual\":{\"visualType\":\"lineChart\",\"projections\":{\"Y\":[{\"queryRef\":\"Sum(Trends.Tenants)\"},{\"queryRef\":\"Customers.Avg Sessions per Tenant\"}],\"Category\":[{\"queryRef\":\"Trends.Month\",\"active\":true}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"t\",\"Entity\":\"Trends\",\"Type\":0},{\"Name\":\"c\",\"Entity\":\"Customers\",\"Type\":0}],\"Select\":[{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"t\"}},\"Property\":\"Month\"},\"Name\":\"Trends.Month\",\"NativeReferenceName\":\"Month\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"t\"}},\"Property\":\"Tenants\"}},\"Function\":0},\"Name\":\"Sum(Trends.Tenants)\",\"NativeReferenceName\":\"Tenants\"},{\"Measure\":{\"Expression\":{\"SourceRef\":{\"Source\":\"c\"}},\"Property\":\"Avg Sessions per Tenant\"},\"Name\":\"Customers.Avg Sessions per Tenant\",\"NativeReferenceName\":\"Avg Sessions per Tenant\"}],\"OrderBy\":[{\"Direction\":2,\"Expression\":{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"t\"}},\"Property\":\"Tenants\"}},\"Function\":0}}}]},\"hasDefaultSort\":true,\"objects\":{\"legend\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 260.00,
+          "width": 620.00,
+          "x": 20.00,
+          "y": 170.00,
+          "z": 6000.00
+        }
+      ],
+      "width": 1280.00
+    },
+    {
+      "config": "{}",
+      "displayName": "Policies & AI Hub",
+      "displayOption": 1,
+      "height": 720.00,
+      "name": "PoliciesPage",
+      "ordinal": 1,
+      "visualContainers": [
+        {
+          "config": "{\"name\":\"licensesBar\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":360,\"z\":2000,\"width\":1240,\"height\":340}}],\"singleVisual\":{\"visualType\":\"clusteredBarChart\"}}",
+          "filters": "[]",
+          "height": 340.00,
+          "width": 1240.00,
+          "x": 20.00,
+          "y": 360.00,
+          "z": 2000.00
+        },
+        {
+          "config": "{\"name\":\"policiesBar\",\"layouts\":[{\"id\":0,\"position\":{\"x\":20,\"y\":10,\"z\":0,\"width\":620,\"height\":340}}],\"singleVisual\":{\"visualType\":\"barChart\",\"objects\":{\"categoryAxis\":[{\"properties\":{\"show\":{\"expr\":{\"Literal\":{\"Value\":\"true\"}}}}}]}}}",
+          "filters": "[]",
+          "height": 340.00,
+          "width": 620.00,
+          "x": 20.00,
+          "y": 10.00,
+          "z": 0.00
+        },
+        {
+          "config": "{\"name\":\"uiComponentsBar\",\"layouts\":[{\"id\":0,\"position\":{\"x\":660,\"y\":10,\"z\":1000,\"width\":600,\"height\":340}}],\"singleVisual\":{\"visualType\":\"barChart\"}}",
+          "filters": "[]",
+          "height": 340.00,
+          "width": 600.00,
+          "x": 660.00,
+          "y": 10.00,
+          "z": 1000.00
+        }
+      ],
+      "width": 1280.00
+    }
+  ]
+}

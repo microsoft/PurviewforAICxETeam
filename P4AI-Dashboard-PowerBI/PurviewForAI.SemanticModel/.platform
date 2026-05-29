@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "PurviewForAI"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a3f1f03c-e401-4158-b42f-2ed2ad54b6e7"
+  }
+}
