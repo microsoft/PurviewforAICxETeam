@@ -1,0 +1,350 @@
+{
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"Customers\",\"Policies\",\"UIComponents\",\"Licenses\",\"Trends\",\"AIAppsAgents\"]"
+      },
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "0"
+      }
+    ],
+    "expressions": [
+      {
+        "name": "KustoCluster",
+        "kind": "m",
+        "expression": [
+          "\"https://cxedataplatformcluster.westus2.kusto.windows.net\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+        ],
+        "lineageTag": "k-cluster-param"
+      },
+      {
+        "name": "KustoDatabase",
+        "kind": "m",
+        "expression": [
+          "\"cxedata\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+        ],
+        "lineageTag": "k-database-param"
+      }
+    ],
+    "tables": [
+      {
+        "name": "Customers",
+        "lineageTag": "tbl-customers",
+        "columns": [
+          { "name": "TenantId", "dataType": "string", "sourceColumn": "TenantId", "lineageTag": "col-tenantid" },
+          { "name": "TenantName", "dataType": "string", "sourceColumn": "TenantName", "lineageTag": "col-tenantname" },
+          { "name": "Sessions", "dataType": "int64", "sourceColumn": "Sessions", "lineageTag": "col-sessions", "summarizeBy": "sum" },
+          { "name": "Policies", "dataType": "int64", "sourceColumn": "Policies", "lineageTag": "col-policies", "summarizeBy": "sum" },
+          { "name": "E5PAU", "dataType": "int64", "sourceColumn": "E5PAU", "lineageTag": "col-e5pau", "summarizeBy": "sum" },
+          { "name": "M365CopilotSeats", "dataType": "int64", "sourceColumn": "M365CopilotSeats", "lineageTag": "col-copilotseats", "summarizeBy": "sum" },
+          { "name": "AIApps", "dataType": "int64", "sourceColumn": "AIApps", "lineageTag": "col-aiapps", "summarizeBy": "sum" },
+          { "name": "AIAgents", "dataType": "int64", "sourceColumn": "AIAgents", "lineageTag": "col-aiagents", "summarizeBy": "sum" },
+          { "name": "CustomerSegmentGroup", "dataType": "string", "sourceColumn": "CustomerSegmentGroup", "lineageTag": "col-segment" },
+          { "name": "RegionName", "dataType": "string", "sourceColumn": "RegionName", "lineageTag": "col-region" },
+          { "name": "IndustryName", "dataType": "string", "sourceColumn": "IndustryName", "lineageTag": "col-industry" },
+          { "name": "HasM365Copilot", "dataType": "boolean", "sourceColumn": "HasM365Copilot", "lineageTag": "col-hascopilot" },
+          { "name": "HasCopilotStudio", "dataType": "boolean", "sourceColumn": "HasCopilotStudio", "lineageTag": "col-hascopilotstudio" },
+          { "name": "HasMIP", "dataType": "boolean", "sourceColumn": "HasMIP", "lineageTag": "col-hasmip" },
+          { "name": "HasDLP", "dataType": "boolean", "sourceColumn": "HasDLP", "lineageTag": "col-hasdlp" },
+          { "name": "IsDSPCAT", "dataType": "boolean", "sourceColumn": "IsDSPCAT", "lineageTag": "col-iscat" },
+          { "name": "IsS500", "dataType": "boolean", "sourceColumn": "IsS500", "lineageTag": "col-iss500" },
+          { "name": "IsF500", "dataType": "boolean", "sourceColumn": "IsF500", "lineageTag": "col-isf500" },
+          { "name": "IsStrategicCustomer", "dataType": "boolean", "sourceColumn": "IsStrategicCustomer", "lineageTag": "col-isstrategic" },
+          { "name": "AccountManager", "dataType": "string", "sourceColumn": "AccountManager", "lineageTag": "col-acctmgr" },
+          { "name": "AccountTechnologyStrategist", "dataType": "string", "sourceColumn": "AccountTechnologyStrategist", "lineageTag": "col-ats" },
+          { "name": "CountryName", "dataType": "string", "sourceColumn": "CountryName", "lineageTag": "col-country" },
+          { "name": "SubSegmentName", "dataType": "string", "sourceColumn": "SubSegmentName", "lineageTag": "col-subsegment" }
+        ],
+        "measures": [
+          {
+            "name": "Total Tenants",
+            "expression": "COUNTROWS('Customers')",
+            "lineageTag": "msr-totaltenants"
+          },
+          {
+            "name": "Total Sessions",
+            "expression": "SUM('Customers'[Sessions])",
+            "lineageTag": "msr-totalsessions"
+          },
+          {
+            "name": "Total E5 PAU",
+            "expression": "SUM('Customers'[E5PAU])",
+            "lineageTag": "msr-totale5pau"
+          },
+          {
+            "name": "Total M365 Copilot Seats",
+            "expression": "SUM('Customers'[M365CopilotSeats])",
+            "lineageTag": "msr-totalcopilotseats"
+          },
+          {
+            "name": "Total AI Apps",
+            "expression": "SUM('Customers'[AIApps])",
+            "lineageTag": "msr-totalaiapps"
+          },
+          {
+            "name": "Total AI Agents",
+            "expression": "SUM('Customers'[AIAgents])",
+            "lineageTag": "msr-totalaiagents"
+          },
+          {
+            "name": "Copilot Adoption %",
+            "expression": "DIVIDE(CALCULATE(COUNTROWS('Customers'), 'Customers'[HasM365Copilot] = TRUE()), COUNTROWS('Customers'), 0) * 100",
+            "formatString": "0.0\"%\"",
+            "lineageTag": "msr-copilotpct"
+          },
+          {
+            "name": "S500 Count",
+            "expression": "CALCULATE(COUNTROWS('Customers'), 'Customers'[IsS500] = TRUE())",
+            "lineageTag": "msr-s500count"
+          },
+          {
+            "name": "CAT Count",
+            "expression": "CALCULATE(COUNTROWS('Customers'), 'Customers'[IsDSPCAT] = TRUE())",
+            "lineageTag": "msr-catcount"
+          },
+          {
+            "name": "Avg Sessions per Tenant",
+            "expression": "AVERAGE('Customers'[Sessions])",
+            "formatString": "#,##0",
+            "lineageTag": "msr-avgsessions"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Customers-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "let policies = Purview_FactAIHubEngagedAdmin",
+                "| where Workload == 'AiHub' and Feature has 'DSPM for AI'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize Policies=dcount(Feature) by TenantId;",
+                "let sessions = Purview_FactAIHubEngagedUsers",
+                "| where Workload == 'AiHub'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize Sessions=sum(AllUp) by TenantId;",
+                "let e5pau = FactTenantPAUBySKU",
+                "| where SnapshotDate > ago(30d) and SkuName has 'E5' and HasPaidSeats == true",
+                "| summarize E5PAU=sum(EXO) by TenantId;",
+                "let copilotseats = FactTenantPAUBySKU",
+                "| where SnapshotDate > ago(30d) and SkuName has 'Copilot' and HasPaidSeats == true",
+                "| summarize M365CopilotSeats=sum(EXO) by TenantId;",
+                "let copilotstudio = FactTenantPAUBySKU",
+                "| where SnapshotDate > ago(30d) and SkuName has 'Copilot Studio'",
+                "| summarize HasCopilotStudio=count() by TenantId;",
+                "let aiapps = Purview_FactAIHubEngagedUsers",
+                "| where Workload == 'AiHub' and Element == 'AllUp' and SubWorkload in ('AppsList','AgentsList')",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize AIApps=sumif(AllUp, SubWorkload=='AppsList'), AIAgents=sumif(AllUp, SubWorkload=='AgentsList') by TenantId;",
+                "let tenants = DimTenant",
+                "| summarize arg_max(SnapshotDate, *) by TenantId;",
+                "sessions",
+                "| join kind=inner tenants on TenantId",
+                "| join kind=leftouter policies on TenantId",
+                "| join kind=leftouter e5pau on TenantId",
+                "| join kind=leftouter copilotseats on TenantId",
+                "| join kind=leftouter copilotstudio on TenantId",
+                "| join kind=leftouter aiapps on TenantId",
+                "| where TenantName !in~ ('ZAVA', 'ZAVA - PRIVATE', 'ONE MTC - PROD', 'P4AISDKFEB2025', 'XDRNINJAS', 'XDR NINJAS')",
+                "| extend HasM365Copilot = iff(HasM365Copilot1 == 1, true, false)",
+                "| extend HasMIP1 = iff(HasMIP == 1, true, false)",
+                "| extend HasDLP1 = iff(HasDLP == 1, true, false)",
+                "| extend IsDSPCAT1 = iff(IsDSPCAT == 1, true, false)",
+                "| extend HasCopilotStudio1 = iff(isnotnull(HasCopilotStudio), true, false)",
+                "| project TenantId, TenantName, Sessions, Policies=iff(isnull(Policies), tolong(0), Policies),",
+                "    E5PAU=iff(isnull(E5PAU), tolong(0), E5PAU),",
+                "    M365CopilotSeats=iff(isnull(M365CopilotSeats), tolong(0), M365CopilotSeats),",
+                "    AIApps=iff(isnull(AIApps), tolong(0), AIApps),",
+                "    AIAgents=iff(isnull(AIAgents), tolong(0), AIAgents),",
+                "    CustomerSegmentGroup, SubSegmentName, RegionName, CountryName, IndustryName,",
+                "    HasM365Copilot, HasCopilotStudio=HasCopilotStudio1, HasMIP=HasMIP1, HasDLP=HasDLP1,",
+                "    IsDSPCAT=IsDSPCAT1, IsS500, IsF500, IsStrategicCustomer,",
+                "    AccountManager, AccountTechnologyStrategist",
+                "| order by Sessions desc\", [Timeout=#duration(0, 0, 10, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Policies",
+        "lineageTag": "tbl-policies",
+        "columns": [
+          { "name": "Feature", "dataType": "string", "sourceColumn": "Feature", "lineageTag": "col-pol-feature" },
+          { "name": "TenantCount", "dataType": "int64", "sourceColumn": "TenantCount", "lineageTag": "col-pol-tenantcount", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "Policies-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "Purview_FactAIHubEngagedAdmin",
+                "| where Workload == 'AiHub' and Feature has 'DSPM for AI'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize TenantCount=dcount(TenantId) by Feature",
+                "| order by TenantCount desc",
+                "| take 20\", [Timeout=#duration(0, 0, 5, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "UIComponents",
+        "lineageTag": "tbl-uicomponents",
+        "columns": [
+          { "name": "Page", "dataType": "string", "sourceColumn": "Page", "lineageTag": "col-ui-page" },
+          { "name": "Users", "dataType": "int64", "sourceColumn": "Users", "lineageTag": "col-ui-users", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "UIComponents-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "Purview_FactAIHubEngagedUsers",
+                "| where Workload == 'AiHub' and Element == 'AllUp'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize Users=sum(AllUp) by Page",
+                "| order by Users desc",
+                "| take 15\", [Timeout=#duration(0, 0, 5, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Licenses",
+        "lineageTag": "tbl-licenses",
+        "columns": [
+          { "name": "SkuName", "dataType": "string", "sourceColumn": "SkuName", "lineageTag": "col-lic-sku" },
+          { "name": "TenantCount", "dataType": "int64", "sourceColumn": "TenantCount", "lineageTag": "col-lic-tenantcount", "summarizeBy": "sum" },
+          { "name": "TotalSeats", "dataType": "int64", "sourceColumn": "TotalSeats", "lineageTag": "col-lic-totalseats", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "Licenses-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "let dspmTenants = Purview_FactAIHubEngagedAdmin",
+                "| where Workload == 'AiHub' and Feature has 'DSPM for AI'",
+                "| where SnapshotDate > ago(365d)",
+                "| distinct TenantId;",
+                "FactTenantPAUBySKU",
+                "| where SnapshotDate > ago(30d)",
+                "| where TenantId in (dspmTenants)",
+                "| where SkuName has_any ('Copilot', 'E5', 'E3', 'Information Protection')",
+                "| where HasPaidSeats == true",
+                "| summarize TenantCount=dcount(TenantId), TotalSeats=sum(EXO) by SkuName",
+                "| order by TenantCount desc",
+                "| take 15\", [Timeout=#duration(0, 0, 5, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Trends",
+        "lineageTag": "tbl-trends",
+        "columns": [
+          { "name": "Month", "dataType": "string", "sourceColumn": "Month", "lineageTag": "col-trend-month" },
+          { "name": "Tenants", "dataType": "int64", "sourceColumn": "Tenants", "lineageTag": "col-trend-tenants", "summarizeBy": "sum" },
+          { "name": "Sessions", "dataType": "int64", "sourceColumn": "Sessions", "lineageTag": "col-trend-sessions", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "Trends-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "Purview_FactAIHubEngagedUsers",
+                "| where Workload == 'AiHub'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize Sessions=sum(AllUp), Tenants=dcount(TenantId) by Month=format_datetime(SnapshotDate, 'yyyy-MM')",
+                "| order by Month asc\", [Timeout=#duration(0, 0, 5, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "AIAppsAgents",
+        "lineageTag": "tbl-aiappsagents",
+        "columns": [
+          { "name": "TenantId", "dataType": "string", "sourceColumn": "TenantId", "lineageTag": "col-aa-tenantid" },
+          { "name": "SubWorkload", "dataType": "string", "sourceColumn": "SubWorkload", "lineageTag": "col-aa-subworkload" },
+          { "name": "Page", "dataType": "string", "sourceColumn": "Page", "lineageTag": "col-aa-page" },
+          { "name": "Interactions", "dataType": "int64", "sourceColumn": "Interactions", "lineageTag": "col-aa-interactions", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "AIAppsAgents-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = AzureDataExplorer.Contents(KustoCluster, KustoDatabase, \"",
+                "Purview_FactAIHubEngagedUsers",
+                "| where Workload == 'AiHub' and SubWorkload in ('AppsList', 'AgentsList') and Element == 'AllUp'",
+                "| where SnapshotDate > ago(365d)",
+                "| summarize Interactions=sum(AllUp) by TenantId, SubWorkload, Page",
+                "| order by Interactions desc",
+                "| take 500\", [Timeout=#duration(0, 0, 5, 0)])",
+                "in",
+                "    Source"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "rel-aiapps-customers",
+        "fromTable": "AIAppsAgents",
+        "fromColumn": "TenantId",
+        "toTable": "Customers",
+        "toColumn": "TenantId",
+        "crossFilteringBehavior": "bothDirections"
+      }
+    ]
+  }
+}
