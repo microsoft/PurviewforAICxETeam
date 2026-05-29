@@ -133,6 +133,7 @@
             font-size: 11px; font-weight: 600;
         }
         .badge-copilot { background: #e6f2ff; color: #0078d4; }
+        .badge-studio { background: #e0f7fa; color: #00838f; }
         .badge-cat { background: #fff3e0; color: #e65100; }
         .badge-mip { background: #e8f5e9; color: #2e7d32; }
 
@@ -225,6 +226,21 @@
     </div>
 
     <div class="container">
+        <!-- Exclusion Note -->
+        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:8px 16px;margin-bottom:12px;font-size:12px;color:#856404;">
+            ⚠️ <strong>Excluded tenants:</strong> ZAVA, ZAVA - PRIVATE, ONE MTC - PROD, P4AISDKFEB2025, XDR NINJAS (internal test/demo tenants excluded from all metrics)
+        </div>
+
+        <!-- Customer Search Box (drives charts + details) -->
+        <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:14px;font-weight:600;color:#333;">🔎 Query Customer:</span>
+            <input type="text" id="customerQuery" placeholder="Type customer name or tenant ID to focus charts & details..." 
+                   style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;" 
+                   oninput="handleCustomerQuery(this.value)">
+            <button onclick="clearCustomerQuery()" style="padding:6px 14px;border:1px solid #ccc;border-radius:6px;background:#f5f5f5;cursor:pointer;font-size:12px;">Clear</button>
+            <span id="queryMatchInfo" style="font-size:11px;color:#888;"></span>
+        </div>
+
         <!-- KPI Cards -->
         <div class="kpi-bar">
             <div class="kpi-card">
@@ -238,9 +254,14 @@
                 <div class="kpi-sublabel">Distinct policies observed</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value" id="kpiSnapshot">—</div>
-                <div class="kpi-label">Latest Data</div>
-                <div class="kpi-sublabel">Most recent snapshot</div>
+                <div class="kpi-value" id="kpiCopilotSeats">—</div>
+                <div class="kpi-label">M365 Copilot Seats</div>
+                <div class="kpi-sublabel">Paid seats across DSPM tenants</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiCopilotStudio">—</div>
+                <div class="kpi-label">Copilot Studio Licensed</div>
+                <div class="kpi-sublabel">Tenants with Copilot Studio SKU</div>
             </div>
         </div>
 
@@ -335,6 +356,9 @@
                         <th onclick="sortTable('TenantId')">Tenant ID <span class="sort-arrow">▼</span></th>
                         <th onclick="sortTable('Sessions')">AI Hub Sessions <span class="sort-arrow">▼</span></th>
                         <th onclick="sortTable('E5PAU')">E5 PAU <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('M365CopilotSeats')">M365 Copilot <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('AIApps')">AI Apps <span class="sort-arrow">▼</span></th>
+                        <th onclick="sortTable('AIAgents')">Agents <span class="sort-arrow">▼</span></th>
                         <th onclick="sortTable('Policies')">Policies <span class="sort-arrow">▼</span></th>
                         <th onclick="sortTable('Segment')">Segment <span class="sort-arrow">▼</span></th>
                         <th onclick="sortTable('Region')">Region <span class="sort-arrow">▼</span></th>
@@ -430,6 +454,7 @@
             ]);
 
             updateKPIs(summary);
+            updateCopilotKPIs(licenses.licenses);
             updateCustomers(customers.customers);
             updateTrendChart(trends.trends);
             updateTopSessionsChart(topSessions.customers);
@@ -466,10 +491,11 @@
     function updateKPIs(data) {
         animateNumber('kpiTenants', data.TotalTenants || 0);
         animateNumber('kpiPolicies', data.TotalPolicies || 0);
-        if (data.SnapshotDate) {
-            const d = new Date(data.SnapshotDate);
-            document.getElementById('kpiSnapshot').textContent = d.toLocaleDateString();
-        }
+    }
+
+    function updateCopilotKPIs(licenseData) {
+        animateNumber('kpiCopilotSeats', licenseData.TotalM365CopilotSeats || 0);
+        animateNumber('kpiCopilotStudio', licenseData.HasCopilotStudio || 0);
     }
 
     function animateNumber(elementId, target) {
@@ -529,6 +555,8 @@
         const cat = document.getElementById('filterCAT').value;
 
         filteredCustomers = allCustomers.filter(c => {
+            // Customer query (top search bar) takes priority
+            if (activeCustomerQuery && !c.Name.toLowerCase().includes(activeCustomerQuery) && !c.TenantId.toLowerCase().includes(activeCustomerQuery)) return false;
             if (search && !c.Name.toLowerCase().includes(search) && !c.TenantId.toLowerCase().includes(search)) return false;
             if (segment && c.Segment !== segment) return false;
             if (region && c.Region !== region) return false;
@@ -545,6 +573,7 @@
                     case 'Industry': return c.Industry === chartFilter.value;
                     case 'License':
                         if (chartFilter.value === 'M365 Copilot') return c.HasCopilot;
+                        if (chartFilter.value === 'Copilot Studio') return c.HasCopilotStudio;
                         if (chartFilter.value === 'MIP') return c.HasMIP;
                         if (chartFilter.value === 'DLP') return c.HasDLP;
                         return true;
@@ -565,6 +594,22 @@
         renderTable();
         document.getElementById('tableCount').textContent =
             `Showing ${filteredCustomers.length.toLocaleString()} of ${allCustomers.length.toLocaleString()} tenants`;
+
+        // Update profile charts dynamically based on filtered data
+        if (activeCustomerQuery || document.getElementById('searchInput').value) {
+            const segCounts = {}, regCounts = {}, indCounts = {};
+            filteredCustomers.forEach(c => {
+                segCounts[c.Segment] = (segCounts[c.Segment] || 0) + 1;
+                regCounts[c.Region] = (regCounts[c.Region] || 0) + 1;
+                indCounts[c.Industry] = (indCounts[c.Industry] || 0) + 1;
+            });
+            const makeProfileData = (counts) => Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,8);
+            updateProfileCharts({
+                segments: makeProfileData(segCounts).map(([k,v]) => ({CustomerSegmentGroup:k, count_:v})),
+                regions: makeProfileData(regCounts).map(([k,v]) => ({RegionName:k, count_:v})),
+                industries: makeProfileData(indCounts).map(([k,v]) => ({IndustryName:k, count_:v}))
+            });
+        }
     }
 
     function sortTable(col) {
@@ -582,18 +627,22 @@
                 <td style="font-size:11px;color:#666;font-family:monospace;">${c.TenantId}</td>
                 <td><strong style="color:#5c2d91;">${(c.Sessions || 0).toLocaleString()}</strong></td>
                 <td><strong style="color:#0078d4;">${(c.E5PAU || 0).toLocaleString()}</strong></td>
+                <td><strong style="color:#107c10;">${(c.M365CopilotSeats || 0).toLocaleString()}</strong></td>
+                <td><strong style="color:#5b2d90;">${(c.AIApps || 0).toLocaleString()}</strong></td>
+                <td><strong style="color:#008272;">${(c.AIAgents || 0).toLocaleString()}</strong></td>
                 <td>${c.Policies}</td>
                 <td><span style="cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation(); setChartFilter('Segment','${c.Segment}')">${c.Segment}</span></td>
                 <td><span style="cursor:pointer;text-decoration:underline dotted;" onclick="event.stopPropagation(); setChartFilter('Region','${c.Region}')">${c.Region}</span></td>
                 <td>
                     ${c.HasCopilot ? '<span class="badge badge-copilot">Copilot</span> ' : ''}
+                    ${c.HasCopilotStudio ? '<span class="badge badge-studio">Studio</span> ' : ''}
                     ${c.HasMIP ? '<span class="badge badge-mip">MIP</span> ' : ''}
                     ${c.IsCAT ? '<span class="badge badge-cat">CAT</span> ' : ''}
                 </td>
             </tr>
         `).join('');
         if (filteredCustomers.length > 200) {
-            tbody.innerHTML += `<tr><td colspan="8" style="text-align:center;color:#888;padding:16px;">Showing top 200 of ${filteredCustomers.length.toLocaleString()} — use filters to narrow down</td></tr>`;
+            tbody.innerHTML += `<tr><td colspan="9" style="text-align:center;color:#888;padding:16px;">Showing top 200 of ${filteredCustomers.length.toLocaleString()} — use filters to narrow down</td></tr>`;
         }
     }
 
@@ -731,6 +780,7 @@
         const total = data.Total;
         const licenses = [
             { name: 'M365 Copilot', count: data.HasCopilot, key: 'HasCopilot' },
+            { name: 'Copilot Studio', count: data.HasCopilotStudio || 0, key: 'HasCopilotStudio' },
             { name: 'MIP', count: data.HasMIP, key: 'HasMIP' },
             { name: 'DLP', count: data.HasDLP, key: 'HasDLP' },
             { name: 'MIP Premium', count: data.HasMIPPremium, key: 'HasMIPPremium' },
@@ -745,7 +795,7 @@
                 datasets: [{
                     label: 'Tenants',
                     data: licenses.map(l => l.count),
-                    backgroundColor: ['#0078d4','#107c10','#5c2d91','#008272','#ff8c00','#d83b01','#b4009e'],
+                    backgroundColor: ['#0078d4','#00b7c3','#107c10','#5c2d91','#008272','#ff8c00','#d83b01','#b4009e'],
                     borderRadius: 4,
                     hoverBackgroundColor: '#1b3a6b'
                 }]
@@ -929,6 +979,8 @@
             const p = data.profile;
             const policies = data.policies || [];
             const engagement = data.engagement || [];
+            const aiapps = data.aiapps || {AIApps: 0, AIAgents: 0};
+            const e5pau = data.e5pau || 0;
 
             document.getElementById('detailContent').innerHTML = `
                 <h2>${p.TenantName || tenantId}</h2>
@@ -941,7 +993,25 @@
                         <div class="detail-item"><div class="label">Region</div><div class="value">${p.RegionName || '—'}</div></div>
                         <div class="detail-item"><div class="label">Country</div><div class="value">${p.CountryName || '—'}</div></div>
                         <div class="detail-item"><div class="label">Industry</div><div class="value">${p.IndustryName || '—'}</div></div>
+                        <div class="detail-item"><div class="label">S500</div><div class="value">${p.IsS500 ? '✅ Yes' : '❌ No'}</div></div>
+                        <div class="detail-item"><div class="label">F500</div><div class="value">${p.IsF500 ? '✅ Yes' : '❌ No'}</div></div>
+                        <div class="detail-item"><div class="label">Strategic</div><div class="value">${p.IsStrategicCustomer ? '✅ Yes' : '❌ No'}</div></div>
                         <div class="detail-item"><div class="label">DSP CAT</div><div class="value">${p.IsDSPCAT ? '✅ Yes' : '❌ No'}</div></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>Account Team</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="label">Account Manager</div><div class="value">${p.AccountManager && p.AccountManager !== 'N/A' ? p.AccountManager : '—'}${p.AccountManagerAlias ? ' <span style="color:#888;font-size:11px;">(' + p.AccountManagerAlias + ')</span>' : ''}</div></div>
+                        <div class="detail-item"><div class="label">CxE Contact (ATS)</div><div class="value">${p.AccountTechnologyStrategist || '—'}${p.AccountTechnologyStrategistAlias ? ' <span style="color:#888;font-size:11px;">(' + p.AccountTechnologyStrategistAlias + ')</span>' : ''}</div></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>Usage & Licenses</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="label">AI Apps Sessions</div><div class="value" style="color:#5b2d90;font-weight:700;">${(aiapps.AIApps || 0).toLocaleString()}</div></div>
+                        <div class="detail-item"><div class="label">AI Agents Sessions</div><div class="value" style="color:#008272;font-weight:700;">${(aiapps.AIAgents || 0).toLocaleString()}</div></div>
+                        <div class="detail-item"><div class="label">E5 PAU</div><div class="value" style="color:#0078d4;font-weight:700;">${e5pau.toLocaleString()}</div></div>
                     </div>
                 </div>
                 <div class="detail-section">
@@ -961,7 +1031,7 @@
                     </ul>
                 </div>
                 <div class="detail-section">
-                    <h4>AI Hub Engagement</h4>
+                    <h4>AI Hub Pages Visited (90 days)</h4>
                     ${engagement.length > 0 ?
                         `<ul class="policy-list">${engagement.map(e => `<li>${e.Page} <span style="float:right;color:#5c2d91;font-weight:600">${e.Sessions.toLocaleString()} sessions</span></li>`).join('')}</ul>`
                         : '<p style="color:#888;font-size:13px;">No AI Hub engagement data available</p>'}
@@ -976,6 +1046,42 @@
     function closeDetail() {
         document.getElementById('detailOverlay').classList.remove('open');
         document.getElementById('detailPanel').classList.remove('open');
+    }
+
+    // ─── Customer Query (focus charts + details on one customer) ───
+    let customerQueryTimeout = null;
+    let activeCustomerQuery = '';
+
+    function handleCustomerQuery(value) {
+        clearTimeout(customerQueryTimeout);
+        customerQueryTimeout = setTimeout(() => {
+            activeCustomerQuery = value.trim().toLowerCase();
+            const infoEl = document.getElementById('queryMatchInfo');
+            if (!activeCustomerQuery) {
+                infoEl.textContent = '';
+                applyFilters();
+                return;
+            }
+            // Find matching customers
+            const matches = allCustomers.filter(c => 
+                c.Name.toLowerCase().includes(activeCustomerQuery) || 
+                c.TenantId.toLowerCase().includes(activeCustomerQuery)
+            );
+            infoEl.textContent = `${matches.length} match${matches.length !== 1 ? 'es' : ''}`;
+            infoEl.style.color = matches.length > 0 ? '#107c10' : '#d13438';
+            applyFilters();
+            // Auto-open detail if exact single match
+            if (matches.length === 1) {
+                showDetail(matches[0].TenantId);
+            }
+        }, 300);
+    }
+
+    function clearCustomerQuery() {
+        document.getElementById('customerQuery').value = '';
+        activeCustomerQuery = '';
+        document.getElementById('queryMatchInfo').textContent = '';
+        applyFilters();
     }
 
     // ─── Keyboard shortcuts ────────────────────────────────────────

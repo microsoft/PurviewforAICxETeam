@@ -105,6 +105,22 @@ def get_customers(top: int = Query(default=500, le=5000)):
         | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
         | where SkuName has "E5"
         | summarize E5PAU=sum(EXO) by TenantId;
+    let m365copilot = FactTenantPAUBySKU
+        | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
+        | where SkuName has "Copilot" and SkuName !has "Studio" and HasPaidSeats == true
+        | summarize M365CopilotSeats=sum(EXO) by TenantId;
+    let copilotstudio = FactTenantPAUBySKU
+        | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
+        | where SkuName has "Copilot Studio"
+        | summarize HasCopilotStudio=count() by TenantId;
+    let aiappsagents = Purview_FactAIHubEngagedUsers
+        | where SnapshotDate >= ago(365d)
+        | where Workload == "AiHub"
+        | where SubWorkload in ("AppsList", "AgentsList") and Element == "AllUp"
+        | summarize 
+            AIApps = sumif(AllUp, SubWorkload == "AppsList"),
+            AIAgents = sumif(AllUp, SubWorkload == "AgentsList")
+            by TenantId;
     let tenants = DimTenant
         | summarize arg_max(SnapshotDate, *) by TenantId
         | project TenantId, TenantName, CustomerSegmentGroup, RegionName, CountryName, IndustryName,
@@ -112,11 +128,21 @@ def get_customers(top: int = Query(default=500, le=5000)):
     policyData
     | join kind=leftouter sessions on TenantId
     | join kind=leftouter e5pau on TenantId
+    | join kind=leftouter m365copilot on TenantId
+    | join kind=leftouter copilotstudio on TenantId
+    | join kind=leftouter aiappsagents on TenantId
     | join kind=leftouter tenants on TenantId
     | extend Sessions1 = iff(isnull(Sessions), tolong(0), Sessions)
     | extend E5PAU1 = iff(isnull(E5PAU), tolong(0), E5PAU)
+    | extend M365CopilotSeats1 = iff(isnull(M365CopilotSeats), tolong(0), M365CopilotSeats)
+    | extend HasCopilotStudio1 = iff(isnull(HasCopilotStudio), false, HasCopilotStudio > 0)
+    | extend AIApps1 = iff(isnull(AIApps), tolong(0), AIApps)
+    | extend AIAgents1 = iff(isnull(AIAgents), tolong(0), AIAgents)
+    | where TenantName !in~ ("ZAVA", "ZAVA - PRIVATE", "ONE MTC - PROD", "P4AISDKFEB2025", "XDRNINJAS", "XDR NINJAS")
     | project TenantId, Name=iff(isempty(TenantName), TenantId, TenantName),
               Policies, PolicyList, Sessions=Sessions1, E5PAU=E5PAU1,
+              M365CopilotSeats=M365CopilotSeats1, HasCopilotStudio=HasCopilotStudio1,
+              AIApps=AIApps1, AIAgents=AIAgents1,
               Segment=iff(isempty(CustomerSegmentGroup), "Unknown", CustomerSegmentGroup),
               Region=iff(isempty(RegionName), "Unknown", RegionName),
               Country=iff(isempty(CountryName), "Unknown", CountryName),
@@ -138,7 +164,10 @@ def get_customer_detail(tenant_id: str):
     | summarize arg_max(SnapshotDate, *) by TenantId
     | project TenantId, TenantName, CustomerSegmentGroup, SubSegmentName, RegionName, CountryName,
               IndustryName, HasM365Copilot, HasMIP, HasDLP, IsDSPCAT,
-              HasMIPPremium, HasEndPointDLP
+              HasMIPPremium, HasEndPointDLP,
+              AccountManager, AccountManagerAlias,
+              AccountTechnologyStrategist, AccountTechnologyStrategistAlias,
+              IsS500, IsF500, IsG500, IsStrategicCustomer
     """
     policies_query = f"""
     let latestDate = toscalar(Purview_FactAIHubEngagedAdmin | summarize max(SnapshotDate));
@@ -150,22 +179,42 @@ def get_customer_detail(tenant_id: str):
     | order by Feature asc
     """
     engagement_query = f"""
-    let latestDate = toscalar(Purview_FactAIHubEngagedUsers | summarize max(SnapshotDate));
     Purview_FactAIHubEngagedUsers
-    | where SnapshotDate == latestDate
+    | where SnapshotDate >= ago(90d)
     | where TenantId == "{tenant_id}"
     | where Workload == "AiHub"
     | summarize Sessions=sum(AllUp) by Page
     | order by Sessions desc
     """
+    aiapps_query = f"""
+    Purview_FactAIHubEngagedUsers
+    | where SnapshotDate >= ago(365d)
+    | where TenantId == "{tenant_id}"
+    | where Workload == "AiHub"
+    | where SubWorkload in ("AppsList", "AgentsList") and Element == "AllUp"
+    | summarize 
+        AIApps = sumif(AllUp, SubWorkload == "AppsList"),
+        AIAgents = sumif(AllUp, SubWorkload == "AgentsList")
+    """
+    e5pau_query = f"""
+    FactTenantPAUBySKU
+    | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
+    | where TenantId == "{tenant_id}"
+    | where SkuName has "E5"
+    | summarize E5PAU=sum(EXO) by TenantId
+    """
     profile = query_kusto(profile_query)
     policies = query_kusto(policies_query)
     engagement = query_kusto(engagement_query)
+    aiapps = query_kusto(aiapps_query)
+    e5pau = query_kusto(e5pau_query)
 
     return {
         "profile": profile[0] if profile else {},
         "policies": policies,
         "engagement": engagement,
+        "aiapps": aiapps[0] if aiapps else {"AIApps": 0, "AIAgents": 0},
+        "e5pau": e5pau[0].get("E5PAU", 0) if e5pau else 0,
         "refreshed_at": datetime.utcnow().isoformat(),
     }
 
@@ -182,6 +231,7 @@ def get_top_sessions(top: int = Query(default=15, le=50)):
         DimTenant | summarize arg_max(SnapshotDate, *) by TenantId | project TenantId, TenantName
     ) on TenantId
     | project TenantId, Name=coalesce(TenantName, TenantId), TotalSessions
+    | where Name !in~ ("ZAVA", "ZAVA - PRIVATE", "ONE MTC - PROD", "P4AISDKFEB2025", "XDRNINJAS", "XDR NINJAS")
     | order by TotalSessions desc
     | take {top}
     """
@@ -241,8 +291,43 @@ def get_licenses():
         HasCommunicationCompliance=countif(HasCommunicationCompliance == 1),
         Total=count()
     """
+    # Copilot Studio license count (separate query as it's from FactTenantPAUBySKU)
+    copilot_studio_query = """
+    let dspmTenants = Purview_FactAIHubEngagedAdmin
+    | where Feature has "DSPM for AI"
+    | distinct TenantId;
+    FactTenantPAUBySKU
+    | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
+    | where TenantId in (dspmTenants)
+    | where SkuName has "Copilot Studio"
+    | summarize HasCopilotStudio=dcount(TenantId)
+    """
+    # M365 Copilot paid seats summary
+    m365_copilot_query = """
+    let dspmTenants = Purview_FactAIHubEngagedAdmin
+    | where Feature has "DSPM for AI"
+    | distinct TenantId;
+    FactTenantPAUBySKU
+    | where SnapshotDate == toscalar(FactTenantPAUBySKU | summarize max(SnapshotDate))
+    | where TenantId in (dspmTenants)
+    | where SkuName has "Copilot" and SkuName !has "Studio" and HasPaidSeats == true
+    | summarize M365CopilotTenants=dcount(TenantId), TotalM365CopilotSeats=sum(EXO)
+    """
     rows = query_kusto(query)
-    return {"licenses": rows[0] if rows else {}, "refreshed_at": datetime.utcnow().isoformat()}
+    result = rows[0] if rows else {}
+
+    cs_rows = query_kusto(copilot_studio_query)
+    result["HasCopilotStudio"] = cs_rows[0].get("HasCopilotStudio", 0) if cs_rows else 0
+
+    m365_rows = query_kusto(m365_copilot_query)
+    if m365_rows:
+        result["M365CopilotTenants"] = m365_rows[0].get("M365CopilotTenants", 0)
+        result["TotalM365CopilotSeats"] = m365_rows[0].get("TotalM365CopilotSeats", 0)
+    else:
+        result["M365CopilotTenants"] = 0
+        result["TotalM365CopilotSeats"] = 0
+
+    return {"licenses": result, "refreshed_at": datetime.utcnow().isoformat()}
 
 
 @app.get("/api/profile")
