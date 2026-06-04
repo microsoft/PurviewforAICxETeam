@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actions – Purview for AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0078d4; --primary-light: rgba(0,120,212,0.08); --text: #1e293b; --text-muted: #64748b; --border: #e2e8f0; --card-bg: #ffffff; --success: #16a34a; --warning: #d97706; --danger: #dc2626; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f8 50%, #eef1f8 100%); color: var(--text); line-height: 1.6; min-height: 100vh; }
+        nav { background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; padding: 0 2rem; height: 52px; gap: 0.25rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        nav .nav-brand { color: #fff; font-weight: 700; font-size: 1rem; margin-right: 2rem; white-space: nowrap; letter-spacing: -0.3px; }
+        nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.85rem; padding: 0.75rem 1rem; border-bottom: 2px solid transparent; transition: all 0.2s; height: 52px; display: flex; align-items: center; font-weight: 500; }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        nav a.active { color: #fff; border-bottom-color: #60a5fa; }
+        .refresh-btn { background: linear-gradient(135deg, #0078d4, #0091ff); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,120,212,0.3); }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,120,212,0.4); }
+        header { padding: 1.5rem 2rem 1rem; border-bottom: 1px solid var(--border); }
+        header h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.7px; }
+        header p { color: var(--text-muted); font-size: 0.88rem; }
+        .container { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+        .scan-btn { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; border-radius: 10px; padding: 10px 24px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
+        .scan-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,0.4); }
+        .scan-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .status { margin: 1rem 0; font-size: 0.85rem; color: var(--text-muted); }
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-top: 1rem; }
+        th { background: #f8fafc; padding: 0.75rem 1rem; text-align: left; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 0.75rem 1rem; font-size: 0.84rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        tr:hover td { background: #f8fafc; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; }
+        .tag-followup { background: #fef3c7; color: #92400e; }
+        .source-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
+        .source-uat { background: #dbeafe; color: #1e40af; }
+        .source-crm { background: #ede9fe; color: #5b21b6; }
+        .comment-text { font-size: 0.8rem; color: var(--text-muted); max-width: 400px; line-height: 1.5; }
+        .comment-meta { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; }
+        .link-btn { color: var(--primary); text-decoration: none; font-weight: 500; font-size: 0.8rem; }
+        .link-btn:hover { text-decoration: underline; }
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+        .empty-state h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(124,58,237,0.3); border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="nav-brand">Purview for AI</span>
+        <a href="purview-ai-features.html" style="display:none;">Field Submitted Features</a>
+        <a href="purview-ai-technical-feedback.html">Field Feature Requests</a>
+        <a href="purview-ai-feature-requests.html">CRM Feature Requests</a>
+        <a href="purview-ai-engineering-ado.html">Engineering Feature Requests</a>
+        <a href="purview-ai-roadmap.html">Roadmap</a>
+        <a href="purview-ai-actions.html" class="active">Actions</a>
+        <a href="purview-ai-admin.html">⚙️ Admin</a>
+        <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()">🔄 Refresh Data</button>
+    </nav>
+
+    <header>
+        <h1>📋 Actions</h1>
+        <p>Outstanding follow-ups from UAT and CRM comments requiring attention</p>
+    </header>
+
+    <div class="container">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
+            <button class="scan-btn" id="scanBtn" onclick="scanActions()">🔍 Scan for Actions</button>
+            <span class="status" id="scanStatus"></span>
+        </div>
+
+        <div id="resultsArea">
+            <div class="empty-state">
+                <h3>No scan results yet</h3>
+                <p>Click "Scan for Actions" to check latest comments on UAT and CRM items for outstanding follow-ups.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const SERVER = 'http://127.0.0.1:8765';
+    const CACHE_KEY = 'purview_actions_cache';
+
+    // Load cached results on page load
+    (function() {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const data = JSON.parse(cached);
+                renderActions(data.actions || []);
+                document.getElementById('scanStatus').textContent = `Showing cached results (${data.actions.length} actions) from ${new Date(data.timestamp).toLocaleString()}`;
+            } catch(e) {}
+        }
+    })();
+
+    async function scanActions() {
+        const btn = document.getElementById('scanBtn');
+        const status = document.getElementById('scanStatus');
+        btn.disabled = true;
+        
+        // First test connectivity
+        try {
+            const test = await fetch(SERVER + '/status');
+            await test.json();
+        } catch(e) {
+            status.textContent = '❌ Cannot reach server at ' + SERVER + ' — Error: ' + e.message;
+            btn.disabled = false;
+            return;
+        }
+
+        status.innerHTML = '<span class="spinner"></span>Scanning comments across UAT and CRM items... This may take 1-2 minutes.';
+
+        try {
+            const resp = await fetch(SERVER + '/scan_actions');
+            const data = await resp.json();
+            if (data.ok) {
+                renderActions(data.actions || []);
+                status.textContent = `✅ Scan complete — ${data.actions.length} action(s) found.`;
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ actions: data.actions, timestamp: Date.now() }));
+            } else {
+                status.textContent = '❌ Scan failed: ' + (data.error || 'Unknown error');
+                if (data.actions && data.actions.length > 0) {
+                    renderActions(data.actions);
+                }
+            }
+        } catch (e) {
+            status.textContent = '❌ Scan request failed: ' + e.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function renderActions(actions) {
+        const area = document.getElementById('resultsArea');
+        if (!actions.length) {
+            area.innerHTML = `<div class="empty-state"><h3>✅ No outstanding actions</h3><p>All latest comments have been addressed — no follow-ups detected.</p></div>`;
+            return;
+        }
+
+        let html = `<table><thead><tr>
+            <th>Tag</th>
+            <th>Source</th>
+            <th>Title</th>
+            <th>State</th>
+            <th>Last Action Comment</th>
+            <th>Date</th>
+            <th>Link</th>
+        </tr></thead><tbody>`;
+
+        for (const a of actions) {
+            const sourceClass = a.source.includes('CRM') ? 'source-crm' : 'source-uat';
+            const date = a.commentDate ? new Date(a.commentDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '';
+            const uatLink = `https://dev.azure.com/unifiedactiontracker/Technical%20Feedback/_workitems/edit/${a.itemId}`;
+
+            html += `<tr>
+                <td><span class="tag tag-followup">Follow Up</span></td>
+                <td><span class="source-badge ${sourceClass}">${escHtml(a.source)}</span></td>
+                <td style="max-width:280px;font-weight:500;">${escHtml(a.title)}</td>
+                <td>${escHtml(a.state)}</td>
+                <td>
+                    <div class="comment-text">${escHtml(a.lastComment)}</div>
+                    <div class="comment-meta">— ${escHtml(a.commentBy)}</div>
+                </td>
+                <td style="white-space:nowrap;font-size:0.8rem;">${date}</td>
+                <td><a class="link-btn" href="${uatLink}" target="_blank">Open →</a></td>
+            </tr>`;
+        }
+
+        html += '</tbody></table>';
+        area.innerHTML = html;
+    }
+
+    function escHtml(str) {
+        if (str === null || str === undefined) return '';
+        str = String(str);
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Simple refresh support
+    async function doRefresh() {
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || 'null');
+        if (state && state.running) {
+            alert('A refresh is already in progress. Check another page for status.');
+            return;
+        }
+        try {
+            const r = await fetch(SERVER + '/result');
+            const d = await r.json();
+            if (d.running) {
+                alert('A refresh is already in progress.');
+                return;
+            }
+        } catch(e) {
+            // Server not reachable — clear stale state and continue to offer refresh
+            localStorage.removeItem('purview_refresh');
+        }
+        if (confirm('Start a quick data refresh?')) {
+            try {
+                localStorage.setItem('purview_refresh', JSON.stringify({running: true, mode: 'fast', startTime: Date.now(), page: 'Actions'}));
+                const resp = await fetch(SERVER + '/refresh?mode=fast');
+                const data = await resp.json();
+                if (data.ok || data.started) {
+                    alert('Refresh started! Check Field Feature Requests page for progress.');
+                } else {
+                    localStorage.removeItem('purview_refresh');
+                    alert('Failed: ' + (data.error || ''));
+                }
+            } catch(e) {
+                localStorage.removeItem('purview_refresh');
+                alert('Cannot connect to server at ' + SERVER + '. Error: ' + e.message);
+            }
+        }
+    }
+    </script>
+</body>
+</html>

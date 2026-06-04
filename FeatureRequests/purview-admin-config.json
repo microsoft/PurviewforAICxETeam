@@ -1,0 +1,18 @@
+{
+  "products": [
+    {
+      "id": "eee1947c-0ea7-ef11-8a69-6045bdee9a10",
+      "name": "Purview for AI"
+    }
+  ],
+  "productId": "eee1947c-0ea7-ef11-8a69-6045bdee9a10",
+  "productName": "Purview for AI",
+  "areaPaths": [
+    "IP Engineering\\Purview for AI\\1P Copilots\\M365 Copilot"
+  ],
+  "areaPath": "IP Engineering\\Purview for AI\\1P Copilots\\M365 Copilot",
+  "uatServiceNames": [
+    "Purview for AI"
+  ],
+  "uatServiceName": "Purview for AI"
+}

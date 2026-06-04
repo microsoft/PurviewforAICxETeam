@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purview for AI — Field Submitted Features</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        :root {
+            --primary: #0078d4;
+            --primary-dark: #005a9e;
+            --primary-light: #e8f4fd;
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --p0: #dc2626; --p1: #ea580c; --p2: #2563eb; --p3: #15803d;
+            --blocking-adoption: #dc2626;
+            --blocking-deployment: #ea580c;
+            --blocking-none: #15803d;
+            --blocking-expansion: #7c3aed;
+            --nav-bg: #0f172a;
+            --row-alt: #f8fafc;
+            --hover: #eef2ff;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f8 50%, #eef1f8 100%); color: var(--text); line-height: 1.6; min-height: 100vh; }
+        nav { background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; padding: 0 2rem; height: 52px; gap: 0.25rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        nav .nav-brand { color: #fff; font-weight: 700; font-size: 1rem; margin-right: 2rem; white-space: nowrap; letter-spacing: -0.3px; }
+        nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.85rem; padding: 0.75rem 1rem; border-bottom: 2px solid transparent; transition: all 0.2s; height: 52px; display: flex; align-items: center; font-weight: 500; }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        nav a.active { color: #fff; border-bottom-color: #60a5fa; }
+
+        header { background: linear-gradient(135deg, #1e3a5f 0%, #0078d4 50%, #00a4ef 100%); color: white; padding: 2rem 2rem 1.5rem; position: relative; overflow: hidden; animation: fadeIn 0.6s ease-out; }
+        header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); border-radius: 50%; }
+        header h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.7px; position: relative; }
+        header p { opacity: 0.9; font-size: 0.9rem; position: relative; font-weight: 400; letter-spacing: -0.1px; }
+        .stats-bar { display: flex; gap: 1rem; padding: 1.25rem 2rem; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(229,231,235,0.6); flex-wrap: wrap; animation: fadeInUp 0.5s ease-out 0.1s both; }
+        .stat { display: flex; flex-direction: column; min-width: 110px; padding: 0.5rem 1rem; background: var(--bg); border-radius: 8px; transition: all 0.3s ease; }
+        .stat:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; }
+        .stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        .controls { display: flex; gap: 0.75rem; padding: 1rem 2rem; flex-wrap: wrap; align-items: center; animation: fadeInUp 0.5s ease-out 0.2s both; }
+        .search-box { flex: 1; min-width: 220px; padding: 0.55rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: inherit; outline: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: var(--card-bg); }
+        .search-box:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,120,212,0.1), 0 2px 8px rgba(0,120,212,0.08); }
+        .filter-btn { padding: 0.4rem 0.85rem; border: 1.5px solid var(--border); border-radius: 20px; background: var(--card-bg); cursor: pointer; font-size: 0.78rem; font-family: inherit; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap; font-weight: 500; }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); transform: translateY(-1px); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 8px rgba(0,120,212,0.25); }
+        .filter-group { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+        .filter-group-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-right: 0.25rem; font-weight: 600; }
+
+        .container { padding: 0 2rem 2rem; overflow-x: auto; animation: fadeInUp 0.5s ease-out 0.3s both; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card-bg); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md); margin-top: 1rem; border: 1px solid rgba(255,255,255,0.2); animation: fadeInUp 0.5s ease-out 0.3s both; }
+        thead th { background: linear-gradient(180deg, #f8fafc, #f1f5f9); padding: 0.7rem 0.65rem; text-align: left; font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: sticky; top: 0; z-index: 2; }
+        thead th:hover { color: var(--primary); }
+        thead th .sort-arrow { margin-left: 3px; opacity: 0.35; font-size: 0.7rem; }
+        thead th.sorted .sort-arrow { opacity: 1; color: var(--primary); }
+
+        tbody tr { border-bottom: 1px solid #f1f5f9; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        tbody tr:nth-child(even) { background: var(--row-alt); }
+        tbody tr:hover { background: var(--hover); transform: scale(1.001); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        tbody tr:last-child { border-bottom: none; }
+        td { padding: 0.6rem 0.65rem; font-size: 0.82rem; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+        td.name-cell { max-width: 350px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        td.name-cell a { color: var(--text); text-decoration: none; transition: color 0.15s; }
+        td.name-cell a:hover { color: var(--primary); }
+        td.desc-cell { max-width: 400px; color: var(--text-muted); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        td.ado-cell { font-size: 0.75rem; white-space: nowrap; }
+
+        .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; letter-spacing: 0.2px; }
+        .badge-p0 { background: #fee2e2; color: var(--p0); }
+        .badge-p1 { background: #ffedd5; color: var(--p1); }
+        .badge-p2 { background: #dbeafe; color: var(--p2); }
+        .badge-p3 { background: #dcfce7; color: var(--p3); }
+        .badge-other { background: #f3f4f6; color: var(--text-muted); }
+        .badge-blocking-adoption { background: #fee2e2; color: var(--blocking-adoption); }
+        .badge-blocking-deployment { background: #ffedd5; color: var(--blocking-deployment); }
+        .badge-blocking-none { background: #dcfce7; color: var(--blocking-none); }
+        .badge-blocking-expansion { background: #f3e8ff; color: var(--blocking-expansion); }
+        .badge-s500 { background: #dcfce7; color: #15803d; }
+
+        .detail-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .detail-modal.open { display: flex; }
+        .detail-panel { background: rgba(255,255,255,0.95); border-radius: 16px; width: 92%; max-width: 720px; max-height: 88vh; overflow-y: auto; padding: 2rem; box-shadow: var(--shadow-lg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); }
+        .detail-panel h2 { font-size: 1.2rem; margin-bottom: 1.25rem; padding-bottom: 0.85rem; border-bottom: 2px solid var(--border); font-weight: 700; letter-spacing: -0.3px; line-height: 1.4; }
+        .detail-panel .field { margin-bottom: 0.85rem; }
+        .detail-panel .field-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); font-weight: 700; margin-bottom: 3px; }
+        .detail-panel .field-value { font-size: 0.9rem; margin-top: 2px; }
+        .close-btn { float: right; background: #f3f4f6; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); line-height: 1; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .close-btn:hover { background: #e5e7eb; color: var(--text); }
+        .no-results { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 1rem; }
+
+        @media (max-width: 900px) {
+            .controls { flex-direction: column; }
+            td.desc-cell { display: none; }
+            header { padding: 1.25rem 1rem; }
+            .stats-bar, .controls, .container { padding-left: 1rem; padding-right: 1rem; }
+            nav { padding: 0 1rem; }
+        }
+        .refresh-btn { background: linear-gradient(135deg, #0078d4, #0091ff); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,120,212,0.3); }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,120,212,0.4); }
+        .refresh-cmd { background:#0f172a; color:#e2e8f0; padding:12px; border-radius:10px; font-family:'SF Mono','Consolas',monospace; font-size:0.82rem; cursor:pointer; margin:8px 0; user-select:all; }
+        .refresh-cmd:hover { outline: 2px solid var(--primary); }
+        .promote-btn { background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; border-radius: 16px; padding: 5px 12px; font-size: 0.72rem; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.2s; box-shadow: 0 1px 4px rgba(5,150,105,0.3); }
+        .promote-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(5,150,105,0.4); }
+        .promote-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+        .promote-btn.spinning { pointer-events: none; opacity: 0.7; }
+        .promote-btn.done { background: linear-gradient(135deg, #6366f1, #818cf8); }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 22px; border-radius: 12px; color: white; font-size: 0.85rem; font-weight: 600; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.25); animation: toastIn 0.3s ease; }
+        .toast.success { background: linear-gradient(135deg, #059669, #10b981); }
+        .toast.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .promote-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:8000; justify-content:center; align-items:center; }
+        .promote-modal-overlay.open { display:flex; }
+        .promote-modal { background:white; border-radius:16px; padding:1.5rem; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .promote-modal h3 { margin:0 0 0.75rem; font-size:1rem; }
+        .promote-modal p { font-size:0.85rem; color:var(--text-muted); margin:0 0 1rem; }
+        .promote-modal .match-list { margin:0.5rem 0 1rem; }
+        .promote-modal .match-item { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:0.82rem; }
+        .promote-modal .match-item a { color:var(--primary); text-decoration:none; font-weight:600; }
+        .promote-modal-btns { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+        .promote-modal-btns button { border:none; border-radius:12px; padding:8px 16px; font-size:0.8rem; cursor:pointer; font-weight:600; transition:all 0.15s; }
+        .promote-modal-btns .btn-cancel { background:#f1f5f9; color:var(--text-muted); }
+        .promote-modal-btns .btn-cancel:hover { background:#e2e8f0; }
+        .promote-modal-btns .btn-new { background:linear-gradient(135deg,#059669,#10b981); color:white; }
+        .promote-modal-btns .btn-existing { background:linear-gradient(135deg,#6366f1,#818cf8); color:white; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="nav-brand">Purview for AI</span>
+        <a href="purview-ai-features.html" class="active" style="display:none;">Field Submitted Features</a>
+        <a href="purview-ai-technical-feedback.html">Field Feature Requests</a>
+        <a href="purview-ai-feature-requests.html">CRM Feature Requests</a>
+        <a href="purview-ai-engineering-ado.html">Engineering Feature Requests</a>
+        <a href="purview-ai-roadmap.html">Roadmap</a>
+        <a href="purview-ai-actions.html">Actions</a>
+        <a href="purview-ai-admin.html">⚙️ Admin</a>
+
+        <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()">🔄 Refresh Data</button>
+    </nav>
+    <header>
+        <h1>Field Submitted Features</h1>
+        <p>Quick Feature Create records from M365 CRM &bull; Product: Purview for AI &bull; Generated 2 Jun 2026 at 13:16</p>
+    </header>
+
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="controls">
+        <input type="text" class="search-box" id="searchBox" placeholder="Search features...">
+        <div id="priorityFilters"></div>
+        <div id="blockingFilters"></div>
+        <button class="filter-btn" id="s500Toggle">S500 Only</button>
+    </div>
+
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th data-sort="name">Name <span class="sort-arrow">↕</span></th>
+                    <th data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
+                    <th data-sort="blocking">Blocking <span class="sort-arrow">↕</span></th>
+                    <th data-sort="opportunitysize">Opp Size <span class="sort-arrow">↕</span></th>
+                    <th data-sort="s500">S500 <span class="sort-arrow">↕</span></th>
+                    <th data-sort="customer">Customer <span class="sort-arrow">↕</span></th>
+                    <th data-sort="requester">Requester <span class="sort-arrow">↕</span></th>
+                    <th data-sort="crmMatches">Similar CRM Features <span class="sort-arrow">↕</span></th>
+                    <th data-sort="linked">Linked Feature Request <span class="sort-arrow">↕</span></th>
+                    <th data-sort="created">Created <span class="sort-arrow">↕</span></th>
+                    <th>Description</th>
+                    <th style="min-width:100px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div class="no-results" id="noResults" style="display:none;">No features match your filters.</div>
+    </div>
+
+    <div class="detail-modal" id="detailModal">
+        <div class="detail-panel" id="detailPanel"></div>
+    </div>
+
+    <div class="promote-modal-overlay" id="promoteModal">
+        <div class="promote-modal" id="promotePanel"></div>
+    </div>
+
+    <script>
+    const CRM_BASE = 'https://m365crm.crm.dynamics.com/main.aspx?appid=bf381023-a1eb-42ad-b3f5-4ad6a41655fc&pagetype=entityrecord&etn=m365_quickfeaturecreate&id=';
+
+    const PRIORITY_MAP = {
+        172430000: { label: 'P0', cls: 'badge-p0' },
+        172430001: { label: 'P1', cls: 'badge-p1' },
+        172430002: { label: 'P2', cls: 'badge-p2' },
+        500350000: { label: 'P3', cls: 'badge-p3' },
+    };
+
+    const BLOCKING_MAP = {
+        172430000: { label: 'Deployment', cls: 'badge-blocking-deployment' },
+        172430001: { label: 'Deployment', cls: 'badge-blocking-deployment' },
+        172430002: { label: 'Adoption', cls: 'badge-blocking-adoption' },
+        172430003: { label: 'None', cls: 'badge-blocking-none' },
+        500350000: { label: 'Expansion', cls: 'badge-blocking-expansion' },
+    };
+
+    const rawData = [{"m365_quickfeaturecreateid": "5c1ed581-e459-f111-89e7-7c1e52bb6254", "m365_opportunitysize": null, "m365_proposed_solution": "Enhance interoperability between Microsoft Purview, Microsoft Defender XDR, and Microsoft Sentinel so that Purview-related alerts and risk signals provide richer investigation context and actionability when surfaced in Defender XDR and Sentinel. \n\n \n\nThe requested improvement is for Purview-generated alerts, including DLP, DSPM for AI, Insider Risk, and similar alert types, to expose enough detail in Sentinel/Defender XDR for incident responders to understand and act on the alert without needing to switch back to Purview as the primary investigation surface. \n\n \n\nRequested capabilities include: \n\n \n\n1. Stronger 1:1 correlation between Purview, Defender XDR, and Sentinel alert/incident views. \n\n2. More complete Purview-specific investigation details in Defender XDR and Sentinel, including policy/rule context, user activity, sensitive information type, prompt/activity details where applicable, evidence, and risk context. \n\n3. Improved remediation/actionability from Sentinel or Defender XDR, including the ability to trigger Sentinel playbooks or equivalent automation based on Purview-related alert context. \n\n4. Clear deep links or identifiers that allow responders to move from Sentinel/Defender to the exact corresponding Purview item when full source-tool review is required. \n\n5. Reduced need to grant broader Purview access to incident responders when the operational workflow is primarily managed from Sentinel/Defender.", "m365_description": "Customer is requesting improved interoperability, investigation detail parity, and remediation workflow parity between Microsoft Purview, Microsoft Defender XDR, and Microsoft Sentinel for Purview-related alerts and risk signals. \n\n \n\nThe customer reports that Purview-related alerts, including DLP, DSPM for AI, Insider Risk, and similar alert types, may surface in Microsoft Sentinel or Microsoft Defender XDR, but they do not expose the same level of granular detail, context, identifiers, or remediation capability available in the originating Microsoft Purview experience. \n\n \n\nExamples provided by the customer show that Sentinel/Defender may display a Purview-related alert or incident, but the available details are not sufficient for incident responders to take action. The missing context includes details such as prompt or activity content, user action, sensitive information type, policy/rule context, evidence, and remediation guidance. The customer also stated that direct 1:1 correlation between the same Purview-related alert across Purview, Defender XDR, and Sentinel is not reliably available. \n\n \n\nThis creates operational friction because responders must switch back to Microsoft Purview to obtain the required investigation details, and then may need to return to Sentinel/Defender to continue triage, notification, automation, or remediation workflows. The customer considers this a gap in single-pane-of-glass incident response and a source of additional time, labor, access risk, and responder fatigue.", "m365_name": "Purview alert interoperability and remediation parity in Microsoft Sentinel and Defender XDR", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": "CSS", "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "5/27/2026 3:55 PM", "createdon": "2026-05-27T15:55:40Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Marcelo de Resende", "requester_email": "mderesende@microsoft.com", "customer_name": "SAN BERNARDINO COUNTY DISTRICT ATTORNEY"}, {"m365_quickfeaturecreateid": "131e4de0-c73c-f111-9a90-7c1e52a1ac2c", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "333,570", "m365_opportunitysize": 333570, "m365_proposed_solution": "Extend JIT support for Copilot location.", "m365_description": "Extending the JIT protection settings to Copilot location.", "m365_name": "Just In Time Protection for Copilot", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "4/20/2026 2:47 PM", "createdon": "2026-04-20T14:47:39Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Ryan Roberts", "requester_email": "ryanroberts@microsoft.com", "customer_name": "Marriott International"}, {"m365_quickfeaturecreateid": "e9872705-5939-f111-9a90-7c1e52a1ac2c", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "700,311", "m365_opportunitysize": 700311, "m365_proposed_solution": "Granular Billing of Purview PAYG Costs based on Admin Units", "m365_description": "Granular Billing of Purview PAYG Costs based on Admin Units to chargeback Business Units. Customers want to be able to charge back business units, subsidiaries withing their tenant the Purview cost generated becuase of individual/users  AI usage within a BU or subsidiary", "m365_name": "PAYG | Granular billing of Purview PAYG Costs based on Admin Units to chargeback Business Units", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": "Information Security", "m365_priority@OData.Community.Display.V1.FormattedValue": "P0-Must Fix ASAP", "m365_priority": 172430000, "m365_whatstheroleofyourcustomer": "Data Protection Service Owner", "createdon@OData.Community.Display.V1.FormattedValue": "4/16/2026 5:56 AM", "createdon": "2026-04-16T05:56:33Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Ajay Kallur", "requester_email": "ajaykallur@microsoft.com", "customer_name": "Ernst & Young (EY, E&Y, EY GLOBAL SERVICES LIMITED )"}, {"m365_quickfeaturecreateid": "f02fd75e-3d39-f111-9a90-7c1e52a1ac2c", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "700,000", "m365_opportunitysize": 700000, "m365_proposed_solution": "Granular Billing of Purview PAYG Costs based on Admin Units", "m365_description": "Granular Billing of Purview PAYG Costs based on Admin Units to chargeback Business Units. Customers want to be able to charge back business units, subsidiaries withing their tenant the Purview cost generated becuase of individual/users  AI usage within a BU or subsidiary", "m365_name": "PAYG | Granular billing of Purview PAYG Costs based on Admin Units to chargeback Business Units", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": "Information Security", "m365_priority@OData.Community.Display.V1.FormattedValue": "P0-Must Fix ASAP", "m365_priority": 172430000, "m365_whatstheroleofyourcustomer": "Data Protection Service Owner", "createdon@OData.Community.Display.V1.FormattedValue": "4/16/2026 2:38 AM", "createdon": "2026-04-16T02:38:38Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Ajay Kallur", "requester_email": "ajaykallur@microsoft.com", "customer_name": "EY"}, {"m365_quickfeaturecreateid": "29005874-271c-f111-9730-7c1e52afcfc1", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "100", "m365_opportunitysize": 100, "m365_proposed_solution": "In Purview, we need a feature similar to this - \nThe integration of Power BI with Collibra allows for the creation of column-level lineage that includes calculated columns and measures in Power BI. This feature enables stitching between calculated columns in the technical lineage and the corresponding Power BI Column assets in Data Catalog.", "m365_description": "In Purview, we need a feature similar to this - \nThe integration of Power BI with Collibra allows for the creation of column-level lineage that includes calculated columns and measures in Power BI. This feature enables stitching between calculated columns in the technical lineage and the corresponding Power BI Column assets in Data Catalog.", "m365_name": "PBI scan", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/10/2026 2:18 AM", "createdon": "2026-03-10T02:18:41Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Pre-Sales", "m365_blocking": 172430000, "requester_name": "Shankar Raman", "requester_email": "shankarraman@microsoft.com", "customer_name": "ASSA ABLOY Group"}, {"m365_quickfeaturecreateid": "a511212f-04ca-f011-ad8f-7c1e52b6824f", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": null, "m365_name": "Visibility into ALL agents in the tenant", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "11/25/2025 1:39 PM", "createdon": "2025-11-25T13:39:37Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Jad Karaki", "requester_email": "jadkaraki@microsoft.com", "customer_name": "Nestec SA"}, {"m365_quickfeaturecreateid": "9bab5f1a-d8c3-f011-aa44-7c1e52dee764", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "65,000", "m365_opportunitysize": 65000, "m365_proposed_solution": "None available", "m365_description": "McKesson is an IP&G customer and we are actively working on a E5 Compliance uplift. The current blocker is the Pay-go features as there is not a calculator or method to estimate what the monthly costs are of the services. McKesson is looking to utilize Browser DLP for inspection of the support 3rd party AI apps (Chat GPT, Copilot Chat, Gemini etc) but were not pleased to hear that is a pay-as- you go service and may block our E5 sale.", "m365_name": "Purview Pay- Go Calculator", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": "STU", "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": "Director of Data Security/ DLP", "createdon@OData.Community.Display.V1.FormattedValue": "11/17/2025 5:08 PM", "createdon": "2025-11-17T17:08:58Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Pre-Sales", "m365_blocking": 172430000, "requester_name": "Matthew Governale", "requester_email": "mgovernale@microsoft.com", "customer_name": "MCKESSON CORPORATION (MC KESSON CORPORATION)"}, {"m365_quickfeaturecreateid": "5b6c68d2-3879-f011-95f2-7c1e52e74483", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "20,000", "m365_opportunitysize": 20000, "m365_proposed_solution": "Enhance AI integration in Purview to leverage Copilot to allow for automated data classification, tagging, and streamlining business metadata definition to make adoption easier.  Several other customers have requested a similar feature to get the most value out of their Purview implementation for data governance.", "m365_description": null, "m365_name": "AI Generated Sensitivity Labels in Purview", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": "MCAPS / Purview Product Engineers", "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": "CISO/Security officer", "createdon@OData.Community.Display.V1.FormattedValue": "8/14/2025 6:02 PM", "createdon": "2025-08-14T18:02:21Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Mohamed Momin", "requester_email": "mohamedmomin@microsoft.com", "customer_name": "CONSTELLATION"}, {"m365_quickfeaturecreateid": "49c84f86-054d-f011-95f2-7c1e52b99ca6", "m365_opportunitysize": null, "m365_proposed_solution": "Customer suggests customizing or deactivating some to reduce noise", "m365_description": "Too Many False Positives from Default SITs\no\tDefault Purview sensitive info types generate too many false positives, impacting DSPM and Insider Risk accuracy.\no\tCustomer suggests customizing or deactivating some to reduce noise", "m365_name": "Purview sensitive info types generate too many false positives", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": "SoftwareOne", "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": "Partner", "createdon@OData.Community.Display.V1.FormattedValue": "6/19/2025 12:04 PM", "createdon": "2025-06-19T12:04:18Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Lothar Zeitler", "requester_email": "Lothar.Zeitler@microsoft.com", "customer_name": "SOFTWAREONE DEUTSCHLAND GMBH"}, {"m365_quickfeaturecreateid": "5cd58ae9-6cff-ef11-a4dd-7c1e526d310c", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Need support for prompt and response data from all 3P AI apps that we monitor.", "m365_name": "3P AI Apps: Prompt + Responses", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P0-Must Fix ASAP", "m365_priority": 172430000, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/12/2025 6:07 PM", "createdon": "2025-03-12T18:07:52Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "06d3ce53-6cff-ef11-a4dd-7c1e526d310c", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "There is a summary view of how much labeled/unlabeled data there is in the assessment that contains SITs. Customers would like to be able to click on this summary to see all of the unlabeled files that have sensitive data within them.", "m365_name": "Data Assessments: \"Labeled / Unlabeled\"", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/12/2025 6:03 PM", "createdon": "2025-03-12T18:03:40Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Retention", "m365_blocking": 500350000, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "86a6eb68-6aff-ef11-a4dd-7c1e526d310c", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Customer would like to be able to filter all views in the Data Assessment base on SITs and Sensitivity Labels. With this, they will prioritize reviewing files/sites with SITs/Labels that are important to them.", "m365_name": "Data Assessments: Filtering", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P0-Must Fix ASAP", "m365_priority": 172430000, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/12/2025 5:49 PM", "createdon": "2025-03-12T17:49:57Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "52fc8b19-6aff-ef11-a4dd-7c1e526d310c", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "On the top of the data assessments, there is a summary for the number of files that have been shared externally. Customers would like to be able to click on that to see a list of files that were shared that way.", "m365_name": "Data Assessments: \"Shared Externally\"", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/12/2025 5:47 PM", "createdon": "2025-03-12T17:47:44Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "a366e5cb-a1fe-ef11-a4dd-7c1e526d310c", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "500", "m365_opportunitysize": 500, "m365_proposed_solution": "Purview is a One-stop shop for AI governance/data security across GenAI portfolio.\nWhen talking to customers. need standard way to approach Purview security/compliance/data governance.", "m365_description": "Purview is a One-stop shop for AI governance/data security across GenAI portfolio.\nWhen talking to customers. need standard way to approach Purview security/compliance/data governance.", "m365_name": "Purview best practices", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P0-Must Fix ASAP", "m365_priority": 172430000, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "3/11/2025 5:53 PM", "createdon": "2025-03-11T17:53:54Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Pre-Sales", "m365_blocking": 172430000, "requester_name": "Shankar Raman", "requester_email": "shankarraman@microsoft.com", "customer_name": "ASSA ABLOY Group"}, {"m365_quickfeaturecreateid": "dc3af54a-dcf5-ef11-a4de-7c1e52a19abb", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "30,000", "m365_opportunitysize": 30000, "m365_proposed_solution": null, "m365_description": "When you run a report, you scope to a group of users and scan all SharePoint sites for an MIP Label to see if this group of users have access. If so, the report will list the site/file and permissions to those files.", "m365_name": "DSPM for AI - Scope reports to users based on Sensitivity Label", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/28/2025 1:59 PM", "createdon": "2025-02-28T13:59:58Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Ryan Roberts", "requester_email": "ryanroberts@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "2274e5c4-16f5-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "MSIT using Sentinel for investigations and they need to be able to bring all the DSPM for AI activity into Sentinel to correlate it with their other alerts. They would need all AI activity, user details, time, SITs, label info, and prompt/response data.", "m365_name": "DSPM for AI data in Sentinel", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/27/2025 2:26 PM", "createdon": "2025-02-27T14:26:02Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Microsoft"}, {"m365_quickfeaturecreateid": "e13e75fd-c2f3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Customer would like to be able to choose which SITs are important to them and only alert or show analytics for these SITs.", "m365_name": "KYD for DSPM for AI", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 9:53 PM", "createdon": "2025-02-25T21:53:48Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Retention", "m365_blocking": 500350000, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "5a7722b1-c2f3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Highlight the SIT in DSPM for AI Activity Explorer prompt and response data", "m365_name": "Highlight the SIT in DSPM for AI Activity Explorer", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 9:51 PM", "createdon": "2025-02-25T21:51:40Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Cleveland Clinic (Cleveland Clinic Foundation)"}, {"m365_quickfeaturecreateid": "9a5e0b6f-c2f3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Customer would like DLP for Copilot to support blocking Copilot access based on SITs being present rather than sensitivity labels", "m365_name": "DLP for Copilot based on SITs", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P1-Required for Rollout", "m365_priority": 172430001, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 9:49 PM", "createdon": "2025-02-25T21:49:49Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Adoption", "m365_blocking": 172430002, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Cleveland Clinic (Cleveland Clinic Foundation)"}, {"m365_quickfeaturecreateid": "8e91f4c9-c1f3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Ability to view a list of files with sensitive information that were referenced by Copilot. They would like to be able to see a list for selected SITs. Example: View all files that Copilot has referenced with Patient Information.", "m365_name": "List of Sensitive Files that have been referenced by Copilot", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 9:45 PM", "createdon": "2025-02-25T21:45:12Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Cleveland Clinic (Cleveland Clinic Foundation)"}, {"m365_quickfeaturecreateid": "08ac8b6a-baf3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "Customer would like to be able to save filters or have a refresh button like the Purview Activity Explorer", "m365_name": "Save views in DSPM for AI Activity Explorer", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 8:52 PM", "createdon": "2025-02-25T20:52:25Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Cleveland Clinic (Cleveland Clinic Foundation)"}, {"m365_quickfeaturecreateid": "6e52b52c-baf3-ef11-a4de-7c1e52a19abb", "m365_opportunitysize": null, "m365_proposed_solution": null, "m365_description": "View prompts and responses before the triggered prompt/response in DSPM for AI Activity Explorer. They are expecting this view to look similar to the communication compliance view for Teams chat messages", "m365_name": "Additional Prompts/Responses surrounding the triggering prompt/response", "m365_s500@OData.Community.Display.V1.FormattedValue": "Yes", "m365_s500": true, "m365_whichorganizationrepresentthecustomer": null, "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/25/2025 8:50 PM", "createdon": "2025-02-25T20:50:42Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Emily Blundo", "requester_email": "emilyblundo@microsoft.com", "customer_name": "Cleveland Clinic (Cleveland Clinic Foundation)"}, {"m365_quickfeaturecreateid": "5bc1abfa-c1f2-ef11-a4de-7c1e52a19abb", "m365_opportunitysize@OData.Community.Display.V1.FormattedValue": "30,000", "m365_opportunitysize": 30000, "m365_proposed_solution": "Add a column or field that would display who has permissions to the content from the assessment.", "m365_description": "Provide details when the assessment finds content, show who has permissions to the content.", "m365_name": "DSPM for AI - Assessment Content Permissions", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": "CSS", "m365_priority@OData.Community.Display.V1.FormattedValue": "P2-Nice to have", "m365_priority": 172430002, "m365_whatstheroleofyourcustomer": null, "createdon@OData.Community.Display.V1.FormattedValue": "2/24/2025 3:14 PM", "createdon": "2025-02-24T15:14:03Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "None", "m365_blocking": 172430003, "requester_name": "Ryan Roberts", "requester_email": "ryanroberts@microsoft.com", "customer_name": "Corning Inc."}, {"m365_quickfeaturecreateid": "65825e15-b1df-ef11-95f5-000d3a7c460a", "m365_opportunitysize": null, "m365_proposed_solution": "Enable filtering and exporting of the Data Assessment's detailed results to help the admin identify sites or documents that were shared either externally or organization-wide.", "m365_description": "The DSPM for AI - Data Assessment overview shows how many sites were shared organization-wide or externally, but it doesn't allow filtering or exporting detailed results.\nCurrently, one must check each site's sharing link value individually, which is impractical for organizations with thousands of SPO sites.", "m365_name": "DSPM for AI - Data Assessment", "m365_s500@OData.Community.Display.V1.FormattedValue": "No", "m365_s500": false, "m365_whichorganizationrepresentthecustomer": "Microsoft Internal", "m365_priority@OData.Community.Display.V1.FormattedValue": "Not Identified Yet", "m365_priority": 500350000, "m365_whatstheroleofyourcustomer": "SOC admins and Information Protection officers", "createdon@OData.Community.Display.V1.FormattedValue": "1/31/2025 8:55 AM", "createdon": "2025-01-31T08:55:14Z", "m365_blocking@OData.Community.Display.V1.FormattedValue": "Deployment", "m365_blocking": 172430001, "requester_name": "Claudia Sedei", "requester_email": "claudias@microsoft.com", "customer_name": "Hilti AG (Hilti Befestigungstechnik AG)"}];
+
+    const features = rawData.map(r => ({
+        id: r.m365_quickfeaturecreateid,
+        name: r.m365_name || '',
+        description: r.m365_description || '',
+        priority: r.m365_priority,
+        blocking: r.m365_blocking,
+        opportunitysize: r.m365_opportunitysize,
+        s500: r.m365_s500 === true,
+        created: r.createdon,
+        proposed_solution: r.m365_proposed_solution || '',
+        role: r.m365_whatstheroleofyourcustomer || '',
+        org: r.m365_whichorganizationrepresentthecustomer || '',
+        requester_name: r.requester_name || '',
+        requester_email: r.requester_email || '',
+        customer_name: r.customer_name || ''
+    }));
+
+    const CRM_MATCHES = {"5cd58ae9-6cff-ef11-a4dd-7c1e526d310c": [{"featureId": "MFR-M365-37618", "guid": "0ed716d0-f21e-f111-8342-7c1e5215744c", "score": 27}], "06d3ce53-6cff-ef11-a4dd-7c1e526d310c": [{"featureId": "MFR-M365-38927", "guid": "c70c82a7-5c42-f111-bec7-6045bdecfc3f", "score": 100}], "52fc8b19-6aff-ef11-a4dd-7c1e526d310c": [{"featureId": "MFR-M365-38927", "guid": "c70c82a7-5c42-f111-bec7-6045bdecfc3f", "score": 25}], "5a7722b1-c2f3-ef11-a4de-7c1e52a19abb": [{"featureId": "MFR-M365-37618", "guid": "0ed716d0-f21e-f111-8342-7c1e5215744c", "score": 33}, {"featureId": "MFR-M365-37616", "guid": "2f5c1b10-f21e-f111-8342-7c1e5215744c", "score": 20}], "9a5e0b6f-c2f3-ef11-a4de-7c1e52a19abb": [{"featureId": "MFR-M365-39482", "guid": "689d7da9-945a-f111-a825-7c1e521995b5", "score": 28}], "8e91f4c9-c1f3-ef11-a4de-7c1e52a19abb": [{"featureId": "MFR-M365-38927", "guid": "c70c82a7-5c42-f111-bec7-6045bdecfc3f", "score": 25}], "6e52b52c-baf3-ef11-a4de-7c1e52a19abb": [{"featureId": "MFR-M365-37618", "guid": "0ed716d0-f21e-f111-8342-7c1e5215744c", "score": 21}]};
+    const CRM_FEATURE_BASE = 'https://m365crm.crm.dynamics.com/main.aspx?appid=bf381023-a1eb-42ad-b3f5-4ad6a41655fc&pagetype=entityrecord&etn=ems_productfeature&id=';
+
+    const LINKED_FEATURES = {"5b6c68d2-3879-f011-95f2-7c1e52e74483": {"featureId": "MFR-M365-34646", "guid": "f40826b1-ff3b-f011-b4cc-6045bda7d206"}, "06d3ce53-6cff-ef11-a4dd-7c1e526d310c": {"featureId": "MFR-M365-38927", "guid": "c70c82a7-5c42-f111-bec7-6045bdecfc3f"}};
+
+    function getPriority(code) { return PRIORITY_MAP[code] || { label: 'Unknown', cls: 'badge-other' }; }
+    function getBlocking(code) { return BLOCKING_MAP[code] || { label: 'Unknown', cls: 'badge-other' }; }
+    function formatDate(iso) { if (!iso) return ''; const d = new Date(iso); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    function formatNumber(n) { return n != null ? n.toLocaleString() : '—'; }
+
+    // Stats
+    function renderStats(list) {
+        const total = list.length;
+        const p0 = list.filter(f => f.priority === 172430000).length;
+        const s500 = list.filter(f => f.s500).length;
+        const blocking = list.filter(f => f.blocking === 172430002).length;
+        const totalOpp = list.reduce((sum, f) => sum + (f.opportunitysize || 0), 0);
+        document.getElementById('statsBar').innerHTML = `
+            <div class="stat"><span class="stat-value">${total}</span><span class="stat-label">Total Features</span></div>
+            <div class="stat"><span class="stat-value" style="color:var(--p0)">${p0}</span><span class="stat-label">P0 Features</span></div>
+            <div class="stat"><span class="stat-value" style="color:var(--blocking-adoption)">${blocking}</span><span class="stat-label">Blocking Adoption</span></div>
+            <div class="stat"><span class="stat-value">${s500}</span><span class="stat-label">S500 Customers</span></div>
+            <div class="stat"><span class="stat-value">${formatNumber(totalOpp)}</span><span class="stat-label">Total Opp Size</span></div>
+        `;
+    }
+
+    // Filters
+    let activePriority = null;
+    let activeBlocking = null;
+    let s500Only = false;
+    let searchTerm = '';
+    let sortCol = 'created';
+    let sortDir = -1;
+
+    function renderFilters() {
+        const pDiv = document.getElementById('priorityFilters');
+        pDiv.innerHTML = Object.entries(PRIORITY_MAP).map(([code, p]) =>
+            `<button class="filter-btn ${activePriority == code ? 'active' : ''}" data-priority="${code}">${p.label}</button>`
+        ).join(' ');
+        pDiv.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activePriority = activePriority == btn.dataset.priority ? null : btn.dataset.priority;
+                render();
+            });
+        });
+
+        const bDiv = document.getElementById('blockingFilters');
+        const uniqueBlocking = [...new Set(Object.entries(BLOCKING_MAP).map(([,b]) => b.label))];
+        const blockingCodes = {};
+        Object.entries(BLOCKING_MAP).forEach(([code, b]) => { blockingCodes[b.label] = blockingCodes[b.label] || []; blockingCodes[b.label].push(Number(code)); });
+        bDiv.innerHTML = uniqueBlocking.map(label =>
+            `<button class="filter-btn ${activeBlocking === label ? 'active' : ''}" data-blocking="${label}">${label}</button>`
+        ).join(' ');
+        bDiv.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeBlocking = activeBlocking === btn.dataset.blocking ? null : btn.dataset.blocking;
+                render();
+            });
+        });
+    }
+
+    document.getElementById('s500Toggle').addEventListener('click', () => { s500Only = !s500Only; render(); });
+    document.getElementById('searchBox').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); render(); });
+
+    // Sort
+    document.querySelectorAll('thead th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            if (sortCol === col) sortDir *= -1;
+            else { sortCol = col; sortDir = col === 'created' ? -1 : 1; }
+            render();
+        });
+    });
+
+    function sortFeatures(list) {
+        return [...list].sort((a, b) => {
+            let va, vb;
+            switch(sortCol) {
+                case 'name': va = a.name; vb = b.name; break;
+                case 'priority': va = a.priority || 999; vb = b.priority || 999; break;
+                case 'blocking': va = a.blocking || 999; vb = b.blocking || 999; break;
+                case 'opportunitysize': va = a.opportunitysize || 0; vb = b.opportunitysize || 0; break;
+                case 's500': va = a.s500 ? 1 : 0; vb = b.s500 ? 1 : 0; break;
+                case 'crmMatches': va = (CRM_MATCHES[a.id] || []).length; vb = (CRM_MATCHES[b.id] || []).length; break;
+                case 'requester': va = a.requester_name.toLowerCase(); vb = b.requester_name.toLowerCase(); break;
+                case 'customer': va = a.customer_name.toLowerCase(); vb = b.customer_name.toLowerCase(); break;
+                case 'linked': va = LINKED_FEATURES[a.id] ? 1 : 0; vb = LINKED_FEATURES[b.id] ? 1 : 0; break;
+                case 'created': va = a.created; vb = b.created; break;
+                default: va = a.name; vb = b.name;
+            }
+            if (va < vb) return -1 * sortDir;
+            if (va > vb) return 1 * sortDir;
+            return 0;
+        });
+    }
+
+    // Detail modal
+    function showDetail(feature) {
+        const p = getPriority(feature.priority);
+        const b = getBlocking(feature.blocking);
+        document.getElementById('detailPanel').innerHTML = `
+            <button class="close-btn" onclick="closeDetail()">&times;</button>
+            <h2>${feature.name}</h2>
+            <div class="field"><div class="field-label">Priority</div><div class="field-value"><span class="badge ${p.cls}">${p.label}</span></div></div>
+            <div class="field"><div class="field-label">Blocking</div><div class="field-value"><span class="badge ${b.cls}">${b.label}</span></div></div>
+            <div class="field"><div class="field-label">Opportunity Size</div><div class="field-value">${formatNumber(feature.opportunitysize)}</div></div>
+            <div class="field"><div class="field-label">S500 Customer</div><div class="field-value">${feature.s500 ? 'Yes' : 'No'}</div></div>
+            ${feature.customer_name ? `<div class="field"><div class="field-label">Customer</div><div class="field-value">${feature.customer_name}</div></div>` : ''}
+            <div class="field"><div class="field-label">Created</div><div class="field-value">${formatDate(feature.created)}</div></div>
+            ${feature.role ? `<div class="field"><div class="field-label">Customer Role</div><div class="field-value">${feature.role}</div></div>` : ''}
+            ${feature.org ? `<div class="field"><div class="field-label">Customer Org</div><div class="field-value">${feature.org}</div></div>` : ''}
+            ${feature.requester_name ? `<div class="field"><div class="field-label">Requester</div><div class="field-value">${feature.requester_name}${feature.requester_email ? ` <a href="mailto:${feature.requester_email}" style="color:var(--primary);font-size:0.85rem;">${feature.requester_email}</a>` : ''}</div></div>` : ''}
+            ${feature.proposed_solution ? `<div class="field"><div class="field-label">Proposed Solution</div><div class="field-value">${feature.proposed_solution}</div></div>` : ''}
+            <div class="field"><div class="field-label">Description</div><div class="field-value" style="white-space:pre-wrap;">${feature.description || 'No description provided.'}</div></div>
+            <div class="field" style="margin-top:1rem;"><a href="${CRM_BASE}${feature.id}" target="_blank" style="color:var(--primary);font-weight:600;">Open in CRM →</a></div>
+        `;
+        document.getElementById('detailModal').classList.add('open');
+    }
+
+    function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+    document.getElementById('detailModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeDetail(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
+
+    // Render
+    function render() {
+        let filtered = features.filter(f => {
+            if (searchTerm && !f.name.toLowerCase().includes(searchTerm) && !f.description.toLowerCase().includes(searchTerm)) return false;
+            if (activePriority && f.priority != activePriority) return false;
+            if (activeBlocking && getBlocking(f.blocking).label !== activeBlocking) return false;
+            if (s500Only && !f.s500) return false;
+            return true;
+        });
+
+        filtered = sortFeatures(filtered);
+        renderStats(filtered);
+        renderFilters();
+
+        document.getElementById('s500Toggle').classList.toggle('active', s500Only);
+
+        document.querySelectorAll('thead th[data-sort]').forEach(th => {
+            th.classList.toggle('sorted', th.dataset.sort === sortCol);
+            th.querySelector('.sort-arrow').textContent = th.dataset.sort === sortCol ? (sortDir === 1 ? '↑' : '↓') : '↕';
+        });
+
+        const tbody = document.getElementById('tableBody');
+        if (filtered.length === 0) {
+            tbody.innerHTML = '';
+            document.getElementById('noResults').style.display = '';
+            return;
+        }
+        document.getElementById('noResults').style.display = 'none';
+
+        tbody.innerHTML = filtered.map(f => {
+            const p = getPriority(f.priority);
+            const b = getBlocking(f.blocking);
+            return `<tr onclick="showDetail(features.find(x=>x.id==='${f.id}'))" style="cursor:pointer;">
+                <td class="name-cell"><a href="${CRM_BASE}${f.id}" target="_blank" onclick="event.stopPropagation()">${f.name}</a></td>
+                <td><span class="badge ${p.cls}">${p.label}</span></td>
+                <td><span class="badge ${b.cls}">${b.label}</span></td>
+                <td>${formatNumber(f.opportunitysize)}</td>
+                <td>${f.s500 ? '<span class="badge badge-s500">S500</span>' : '—'}</td>
+                <td style="font-size:0.8rem;">${f.customer_name || '—'}</td>
+                <td style="white-space:nowrap;font-size:0.8rem;">${f.requester_name ? `<div>${f.requester_name}</div>${f.requester_email ? `<div style="color:var(--text-muted);font-size:0.72rem;">${f.requester_email}</div>` : ''}` : '—'}</td>
+                <td class="ado-cell">${((CRM_MATCHES[f.id] || []).length > 0) ? (CRM_MATCHES[f.id].map(m => { const sc = m.score >= 60 ? '#15803d' : m.score >= 40 ? '#b45309' : '#6b7280'; return `<div style="white-space:nowrap;margin:1px 0;"><span style="color:${sc};font-size:0.7rem;font-weight:600;">${m.score}%</span> <a href="${CRM_FEATURE_BASE}${m.guid}" target="_blank" onclick="event.stopPropagation()" style="color:var(--primary);font-size:0.78rem;text-decoration:none;">${m.featureId}</a></div>`; }).join('')) : ''}</td>
+                <td style="white-space:nowrap;font-size:0.8rem;">${LINKED_FEATURES[f.id] ? `<a href="${CRM_FEATURE_BASE}${LINKED_FEATURES[f.id].guid}" target="_blank" onclick="event.stopPropagation()" style="color:var(--primary);font-weight:600;text-decoration:none;">${LINKED_FEATURES[f.id].featureId}</a>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+                <td style="white-space:nowrap;">${formatDate(f.created)}</td>
+                <td class="desc-cell">${(f.description || '').substring(0, 120)}${f.description && f.description.length > 120 ? '…' : ''}</td>
+                <td><button class="promote-btn${promotedSet.has(f.id) ? ' done' : ''}" id="promote-${f.id}" onclick="event.stopPropagation(); handlePromote('${f.id}')" ${!f.customer_name ? 'disabled title="No customer linked"' : (promotedSet.has(f.id) ? 'disabled' : '')}>${promotedSet.has(f.id) ? '✓ Promoted' : (f.customer_name ? '🚀 Promote' : 'No Customer')}</button></td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ── Promote logic ────────────────────────────────────────────────
+    const SERVER = 'http://127.0.0.1:8765';
+    const promotedSet = new Set();
+
+    function showToast(msg, type) {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.className = 'toast ' + type;
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+    }
+
+    function handlePromote(featureId) {
+        const f = features.find(x => x.id === featureId);
+        if (!f) return;
+        const matches = CRM_MATCHES[featureId] || [];
+
+        if (matches.length > 0) {
+            // Show modal with options
+            const panel = document.getElementById('promotePanel');
+            panel.innerHTML = `
+                <h3>Promote: ${f.name}</h3>
+                <p>Similar CRM Feature Requests already exist. Would you like to add evidence to an existing one or create a new feature request?</p>
+                <div class="match-list">
+                    ${matches.map(m => `
+                        <div class="match-item">
+                            <a href="${CRM_FEATURE_BASE}${m.guid}" target="_blank">${m.featureId}</a>
+                            <button class="promote-modal-btns btn-existing" style="border:none;border-radius:10px;padding:4px 10px;font-size:0.72rem;cursor:pointer;font-weight:600;background:linear-gradient(135deg,#6366f1,#818cf8);color:white;" onclick="executePromote('${featureId}','${m.guid}')">Add Evidence Here</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="promote-modal-btns">
+                    <button class="btn-cancel" onclick="closePromoteModal()">Cancel</button>
+                    <button class="btn-new" onclick="executePromote('${featureId}')">🆕 Create New Feature</button>
+                </div>
+            `;
+            document.getElementById('promoteModal').classList.add('open');
+        } else {
+            executePromote(featureId);
+        }
+    }
+
+    function closePromoteModal() {
+        document.getElementById('promoteModal').classList.remove('open');
+    }
+
+    document.getElementById('promoteModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closePromoteModal();
+    });
+
+    async function executePromote(featureId, existingGuid) {
+        closePromoteModal();
+        const btn = document.getElementById('promote-' + featureId);
+        if (btn) { btn.textContent = '⏳ Working...'; btn.classList.add('spinning'); }
+
+        try {
+            let url = `${SERVER}/promote?id=${featureId}`;
+            if (existingGuid) url += `&existing=${existingGuid}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.ok) {
+                const output = data.output || '';
+                const resultMatch = output.match(/__RESULT__:(.*)/);
+                let resultData = {};
+                if (resultMatch) {
+                    try { resultData = JSON.parse(resultMatch[1]); } catch(e) {}
+                }
+                promotedSet.add(featureId);
+                if (resultData.feature_id && resultData.feature_guid) {
+                    LINKED_FEATURES[featureId] = { featureId: resultData.feature_id, guid: resultData.feature_guid };
+                }
+                if (btn) { btn.textContent = '✓ Promoted'; btn.classList.remove('spinning'); btn.classList.add('done'); btn.disabled = true; }
+                const fid = resultData.feature_id || '';
+                showToast(`✅ Promoted to ${fid}`, 'success');
+                render();
+            } else {
+                if (btn) { btn.textContent = '🚀 Promote'; btn.classList.remove('spinning'); }
+                showToast(`❌ ${data.error || 'Promotion failed'}`, 'error');
+            }
+        } catch (e) {
+            if (btn) { btn.textContent = '🚀 Promote'; btn.classList.remove('spinning'); }
+            showToast('❌ Server not reachable — is refresh_server.py running?', 'error');
+        }
+    }
+
+    render();
+    </script>
+
+        <!-- Refresh toast (non-blocking, bottom-right corner) -->
+    <!-- Loading banner -->
+    <div id="refreshBanner" style="display:none;position:fixed;top:52px;left:0;right:0;z-index:900;background:linear-gradient(135deg,#1d4ed8,#7c3aed);color:white;padding:14px 24px;align-items:center;justify-content:center;gap:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:Segoe UI,sans-serif;">
+        <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+            <svg id="refreshSpinner" width="20" height="20" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><style>@keyframes spin{to{transform:rotate(360deg)}}</style><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="3" fill="none"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+            <span id="refreshBannerText" style="font-weight:600;font-size:0.9rem;">Refreshing...</span>
+            <span id="refreshBannerTime" style="font-size:0.82rem;opacity:0.85;margin-left:8px;">0s elapsed</span>
+            <button id="stopRefreshBtn" onclick="stopRefresh()" style="margin-left:16px;padding:4px 14px;border:1.5px solid rgba(255,255,255,0.7);border-radius:6px;background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;">⏹ Stop</button>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:10px;justify-content:center;">
+            <div style="flex:1;max-width:300px;height:6px;background:rgba(255,255,255,0.25);border-radius:3px;overflow:hidden;">
+                <div id="refreshProgressBar" style="height:100%;width:0%;background:white;border-radius:3px;transition:width 0.5s ease;"></div>
+            </div>
+            <span id="refreshProgressPct" style="font-size:0.75rem;opacity:0.9;min-width:32px;">0%</span>
+        </div>
+        <div id="refreshStep" style="margin-top:4px;font-size:0.78rem;opacity:0.8;text-align:center;"></div>
+    </div>
+    <script>
+    const REFRESH_SERVER = 'http://127.0.0.1:8765';
+
+    async function doRefresh() {
+        // Check if a refresh is already running (possibly from another page)
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || 'null');
+        if (state && state.running) {
+            const sourcePage = state.page || 'another page';
+            alert('⚠️ Cannot refresh — a refresh is already in progress (started from ' + sourcePage + '). Please wait for it to complete.');
+            return;
+        }
+        localStorage.setItem('purview_refresh', JSON.stringify({running: true, mode: 'fast', startTime: Date.now(), page: 'Field Submitted Features'}));
+        showRefreshBanner('fast');
+        try {
+            const resp = await fetch(REFRESH_SERVER + '/refresh');
+            const data = await resp.json();
+            if (data.started) {
+                pollRefreshStatus('fast');
+                return;
+            }
+            localStorage.removeItem('purview_refresh');
+            document.getElementById('refreshBanner').style.display = 'none';
+            if (data.ok) { location.reload(); } else { alert('Refresh failed: ' + (data.error || '')); }
+        } catch (e) {
+            localStorage.removeItem('purview_refresh');
+            document.getElementById('refreshBanner').style.display = 'none';
+            alert('Cannot connect to refresh server. Run refresh_server.py with Python.');
+        }
+    }
+
+    function showRefreshBanner(mode) {
+        const banner = document.getElementById('refreshBanner');
+        const bannerText = document.getElementById('refreshBannerText');
+        const bannerTime = document.getElementById('refreshBannerTime');
+        const progressBar = document.getElementById('refreshProgressBar');
+        const progressPct = document.getElementById('refreshProgressPct');
+        const stepEl = document.getElementById('refreshStep');
+        const spinner = document.getElementById('refreshSpinner');
+        banner.style.display = 'block';
+        banner.style.background = 'linear-gradient(135deg,#1d4ed8,#7c3aed)';
+        const modeLabel = mode === 'full' ? 'Full refresh with AI scoring' : 'Quick refresh';
+        bannerText.textContent = modeLabel + ' in progress...';
+        progressBar.style.width = '0%';
+        progressPct.textContent = '0%';
+        stepEl.textContent = '';
+        spinner.style.display = 'inline-block';
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || '{}');
+        const startTime = state.startTime || Date.now();
+        if (window._refreshTimer) clearInterval(window._refreshTimer);
+        window._refreshTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            bannerTime.textContent = mins > 0 ? `${mins}m ${secs}s elapsed` : `${secs}s elapsed`;
+        }, 1000);
+    }
+
+    async function pollRefreshStatus(mode) {
+        const interval = 3000;
+        const poll = async () => {
+            try {
+                const r = await fetch(REFRESH_SERVER + '/result');
+                const d = await r.json();
+                if (d.running) {
+                    if (d.progress) {
+                        const pct = d.progress.pct || 0;
+                        document.getElementById('refreshProgressBar').style.width = pct + '%';
+                        document.getElementById('refreshProgressPct').textContent = pct + '%';
+                        if (d.progress.step) document.getElementById('refreshStep').textContent = d.progress.step;
+                    }
+                    setTimeout(poll, interval);
+                    return;
+                }
+                localStorage.removeItem('purview_refresh');
+                if (window._refreshTimer) clearInterval(window._refreshTimer);
+                const banner = document.getElementById('refreshBanner');
+                const spinner = document.getElementById('refreshSpinner');
+                if (d.ok) {
+                    banner.style.background = 'linear-gradient(135deg,#15803d,#16a34a)';
+                    document.getElementById('refreshBannerText').textContent = '✅ Refresh complete!';
+                    document.getElementById('refreshProgressBar').style.width = '100%';
+                    document.getElementById('refreshProgressPct').textContent = '100%';
+                    document.getElementById('refreshStep').textContent = 'Reloading page...';
+                    spinner.style.display = 'none';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    banner.style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
+                    document.getElementById('refreshBannerText').textContent = '❌ Refresh failed';
+                    document.getElementById('refreshStep').textContent = d.error || 'Unknown error';
+                    spinner.style.display = 'none';
+                }
+            } catch(e) { setTimeout(poll, interval); }
+        };
+        setTimeout(poll, interval);
+    }
+
+    // Stop refresh
+    async function stopRefresh() {
+        if (!confirm('Stop the current refresh?')) return;
+        try {
+            const r = await fetch('http://127.0.0.1:8765/stop');
+            const d = await r.json();
+            if (d.ok) {
+                localStorage.removeItem('purview_refresh');
+                if (window._refreshTimer) clearInterval(window._refreshTimer);
+                const banner = document.getElementById('refreshBanner');
+                banner.style.background = 'linear-gradient(135deg,#d97706,#b45309)';
+                document.getElementById('refreshBannerText').textContent = '⏹ Refresh stopped';
+                document.getElementById('refreshStep').textContent = 'Stopped by user';
+                document.getElementById('refreshSpinner').style.display = 'none';
+                document.getElementById('stopRefreshBtn').style.display = 'none';
+                setTimeout(() => { banner.style.display = 'none'; }, 3000);
+            }
+        } catch(e) { alert('Cannot connect to server.'); }
+    }
+
+    // On page load: check if refresh is in progress (started from another page)
+    window.addEventListener('DOMContentLoaded', function() {
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || 'null');
+        if (state && state.running) {
+            showRefreshBanner(state.mode);
+            pollRefreshStatus(state.mode);
+        }
+    });
+    </script>
+</body>
+</html>

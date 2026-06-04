@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purview for AI – M365 Roadmap</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        :root {
+            --bg: #ffffff; --surface: #f8fafc; --border: #e2e8f0;
+            --text: #1e293b; --text-muted: #64748b;
+            --accent: #3b82f6; --accent-light: #dbeafe;
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f8 50%, #eef1f8 100%); color: var(--text); line-height: 1.6; min-height: 100vh; }
+        nav { background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; padding: 0 2rem; height: 52px; gap: 0.25rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        nav .nav-brand { color: #fff; font-weight: 700; font-size: 1rem; margin-right: 2rem; white-space: nowrap; letter-spacing: -0.3px; }
+        nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.85rem; padding: 0.75rem 1rem; border-bottom: 2px solid transparent; transition: all 0.2s; height: 52px; display: flex; align-items: center; font-weight: 500; }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        nav a.active { color: #fff; border-bottom-color: #60a5fa; }
+        .refresh-btn { background: linear-gradient(135deg, #0078d4, #0091ff); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,120,212,0.3); }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,120,212,0.4); }
+        .tab-btn { padding: 0.6rem 1.2rem; border: none; background: none; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--text); background: rgba(59,130,246,0.05); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+        .match-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .match-badge.none { background: #f9fafb; color: #9ca3af; border-color: #e5e7eb; }
+        header { padding: 1.5rem 2rem 1rem; border-bottom: 1px solid var(--border); }
+        header h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.7px; }
+        header p { color: var(--text-muted); font-size: 0.88rem; }
+
+        .controls { padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+        .search-box { padding: 0.5rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; width: 280px; outline: none; transition: border 0.2s; }
+        .search-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .filter-group { display: flex; align-items: center; gap: 0.5rem; }
+        .filter-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .filter-select { padding: 0.4rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; background: #fff; cursor: pointer; }
+        .filter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 0.3rem 0.7rem; border-radius: 16px; font-size: 0.75rem; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: #fff; transition: all 0.15s; user-select: none; }
+        .filter-chip:hover { border-color: var(--accent); }
+        .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .stats { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+
+        .container { padding: 1.5rem 2rem; }
+        .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        th { background: #f8fafc; padding: 0.7rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+        th:hover { color: var(--accent); }
+        td { padding: 0.65rem 1rem; font-size: 0.83rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        tr:hover td { background: #f8fafc; }
+        .item-id { font-family: monospace; font-size: 0.75rem; color: var(--text-muted); }
+        .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+        .status-indev { background: #dbeafe; color: #1d4ed8; }
+        .status-rolling { background: #fef3c7; color: #92400e; }
+        .status-launched { background: #dcfce7; color: #15803d; }
+        .status-cancelled { background: #fee2e2; color: #dc2626; }
+        .cloud-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.68rem; background: #f1f5f9; color: var(--text-muted); margin: 1px 2px; }
+        .title-link { color: var(--text); text-decoration: none; font-weight: 500; }
+        .title-link:hover { color: var(--accent); text-decoration: underline; }
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+        .detail-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: flex-end; }
+        .detail-overlay.open { display: flex; }
+        .detail-panel { width: 560px; max-width: 90vw; background: #fff; height: 100%; overflow-y: auto; padding: 2rem; box-shadow: -4px 0 20px rgba(0,0,0,0.15); position: relative; }
+        .detail-panel h2 { font-size: 1.1rem; margin-bottom: 1.25rem; padding-right: 2rem; }
+        .detail-panel .field { margin-bottom: 0.85rem; }
+        .detail-panel .field-label { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+        .detail-panel .field-value { font-size: 0.85rem; margin-top: 0.2rem; line-height: 1.6; }
+        .detail-panel .close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .detail-panel .close-btn:hover { background: #f1f5f9; }
+        .ms-link { display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent); color: white; border-radius: 8px; text-decoration: none; font-size: 0.82rem; font-weight: 600; }
+        .ms-link:hover { opacity: 0.9; }
+
+        @media (max-width: 768px) {
+            nav { padding: 0 1rem; }
+            .controls { padding: 0.75rem 1rem; }
+            .container { padding: 1rem; }
+            .search-box { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="nav-brand">Purview for AI</span>
+        <a href="purview-ai-features.html" style="display:none;">Field Submitted Features</a>
+        <a href="purview-ai-technical-feedback.html">Field Feature Requests</a>
+        <a href="purview-ai-feature-requests.html">CRM Feature Requests</a>
+        <a href="purview-ai-engineering-ado.html">Engineering Feature Requests</a>
+        <a href="purview-ai-roadmap.html" class="active">Roadmap</a>
+        <a href="purview-ai-actions.html">Actions</a>
+        <a href="purview-ai-admin.html">⚙️ Admin</a>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadRoadmap()">🔄 Refresh Data</button>
+    </nav>
+
+    <header>
+        <h1>Purview – Roadmap</h1>
+        <p>M365 Roadmap (live from Microsoft) & Engineering ADO items with cross-reference matching</p>
+    </header>
+
+    <div style="padding:0.75rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:0;">
+        <button class="tab-btn active" id="tabRoadmap" onclick="switchTab('roadmap')">🌐 M365 Roadmap</button>
+        <button class="tab-btn" id="tabEng" onclick="switchTab('engineering')">⚙️ Engineering ADO</button>
+        <button class="tab-btn" id="tabMatches" onclick="switchTab('matches')">🔗 Matches</button>
+    </div>
+
+    <div class="controls" id="controlsBar">
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search roadmap items..." oninput="applyFilters()">
+        <div class="filter-group">
+            <label>Status:</label>
+            <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="In development">In development</option>
+                <option value="Rolling out">Rolling out</option>
+                <option value="Launched">Launched</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Cloud:</label>
+            <select class="filter-select" id="cloudFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Worldwide (Standard Multi-Tenant)">Worldwide</option>
+                <option value="GCC">GCC</option>
+                <option value="GCC High">GCC High</option>
+                <option value="DoD">DoD</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Platform:</label>
+            <select class="filter-select" id="platformFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Web">Web</option>
+                <option value="Desktop">Desktop</option>
+                <option value="Mac">Mac</option>
+                <option value="Android">Android</option>
+                <option value="iOS">iOS</option>
+            </select>
+        </div>
+        <span class="stats" id="statsText"></span>
+    </div>
+
+    <div class="container" id="content">
+        <div class="loading"><span class="spinner"></span>Loading roadmap data from Microsoft...</div>
+    </div>
+
+    <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+        <div class="detail-panel" id="detailPanel"></div>
+    </div>
+
+    <script>
+    const SERVER = 'http://127.0.0.1:8765';
+    let allItems = [];
+    let engItems = [];
+    let currentTab = 'roadmap';
+    let sortCol = 'modified';
+    let sortAsc = false;
+
+    async function loadRoadmap() {
+        const content = document.getElementById('content');
+        content.innerHTML = '<div class="loading"><span class="spinner"></span>Loading roadmap data from Microsoft...</div>';
+        try {
+            const resp = await fetch(SERVER + '/roadmap');
+            const data = await resp.json();
+            if (data.ok) {
+                allItems = data.items;
+                engItems = data.engineering || [];
+                applyFilters();
+            } else {
+                content.innerHTML = `<div class="empty-state"><h3>❌ Failed to load</h3><p>${data.error || 'Unknown error'}</p></div>`;
+            }
+        } catch(e) {
+            content.innerHTML = `<div class="empty-state"><h3>❌ Cannot connect to server</h3><p>${e.message}</p></div>`;
+        }
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tab === 'roadmap' ? 'tabRoadmap' : tab === 'engineering' ? 'tabEng' : 'tabMatches').classList.add('active');
+        sortCol = tab === 'engineering' ? 'changed' : 'modified';
+        sortAsc = false;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const query = document.getElementById('searchBox').value.toLowerCase().trim();
+        const status = document.getElementById('statusFilter').value;
+        const cloud = document.getElementById('cloudFilter').value;
+        const platform = document.getElementById('platformFilter').value;
+
+        if (currentTab === 'roadmap') {
+            let filtered = allItems.filter(item => {
+                if (status && item.status !== status) return false;
+                if (cloud) {
+                    const clouds = (item.tagsContainer?.cloudInstances || []).map(t => t.tagName);
+                    if (!clouds.includes(cloud)) return false;
+                }
+                if (platform) {
+                    const platforms = (item.tagsContainer?.platforms || []).map(t => t.tagName);
+                    if (!platforms.includes(platform)) return false;
+                }
+                if (query) {
+                    const searchable = `${item.title} ${item.description || ''} ${item.id}`.toLowerCase();
+                    if (!searchable.includes(query)) return false;
+                }
+                return true;
+            });
+            filtered.sort((a, b) => {
+                let av = a[sortCol] || ''; let bv = b[sortCol] || '';
+                if (sortCol === 'id') { av = Number(av); bv = Number(bv); }
+                if (av < bv) return sortAsc ? -1 : 1;
+                if (av > bv) return sortAsc ? 1 : -1;
+                return 0;
+            });
+            document.getElementById('statsText').textContent = `${filtered.length} of ${allItems.length} roadmap items`;
+            renderRoadmapTable(filtered);
+        } else if (currentTab === 'engineering') {
+            let filtered = engItems.filter(item => {
+                if (status) {
+                    const stateMap = {'In development':'Active','Rolling out':'Active','Launched':'Closed'};
+                    if (stateMap[status] && item.state !== stateMap[status]) return false;
+                }
+                if (query) {
+                    const searchable = `${item.title} ${item.tags || ''} ${item.id} ${item.assignedTo || ''}`.toLowerCase();
+                    if (!searchable.includes(query)) return false;
+                }
+                return true;
+            });
+            filtered.sort((a, b) => {
+                let av = a[sortCol] || ''; let bv = b[sortCol] || '';
+                if (av < bv) return sortAsc ? -1 : 1;
+                if (av > bv) return sortAsc ? 1 : -1;
+                return 0;
+            });
+            document.getElementById('statsText').textContent = `${filtered.length} of ${engItems.length} engineering items`;
+            renderEngTable(filtered);
+        } else {
+            // Matches tab
+            const matched = allItems.filter(i => i.matchedEngId).map(rm => ({
+                roadmapId: rm.id,
+                roadmapTitle: rm.title,
+                roadmapStatus: rm.status,
+                engId: rm.matchedEngId,
+                engTitle: rm.matchedEngTitle,
+                engState: rm.matchedEngState,
+                score: rm.matchScore,
+                reason: rm.matchReason,
+                tagsContainer: rm.tagsContainer
+            }));
+            let filtered = matched.filter(m => {
+                if (status && m.roadmapStatus !== status) return false;
+                if (cloud) {
+                    const clouds = (m.tagsContainer?.cloudInstances || []).map(t => t.tagName);
+                    if (!clouds.includes(cloud)) return false;
+                }
+                if (platform) {
+                    const platforms = (m.tagsContainer?.platforms || []).map(t => t.tagName);
+                    if (!platforms.includes(platform)) return false;
+                }
+                if (query) {
+                    if (!`${m.roadmapTitle} ${m.engTitle} ${m.roadmapId} ${m.engId}`.toLowerCase().includes(query)) return false;
+                }
+                return true;
+            });
+            filtered.sort((a, b) => (b.score || 0) - (a.score || 0));
+            document.getElementById('statsText').textContent = `${filtered.length} matches found`;
+            renderMatchesTable(filtered);
+        }
+    }
+
+    function setSort(col) {
+        if (sortCol === col) { sortAsc = !sortAsc; }
+        else { sortCol = col; sortAsc = col === 'title'; }
+        applyFilters();
+    }
+
+    function renderRoadmapTable(items) {
+        const content = document.getElementById('content');
+        if (!items.length) { content.innerHTML = '<div class="empty-state"><h3>No items match your filters</h3></div>'; return; }
+        const arrow = (col) => sortCol === col ? (sortAsc ? ' ↑' : ' ↓') : ' ↕';
+        let html = `<table><thead><tr>
+            <th onclick="setSort('id')">ID${arrow('id')}</th>
+            <th onclick="setSort('title')">Title${arrow('title')}</th>
+            <th onclick="setSort('status')">Status${arrow('status')}</th>
+            <th onclick="setSort('publicPreviewDate')">Preview${arrow('publicPreviewDate')}</th>
+            <th onclick="setSort('publicDisclosureAvailabilityDate')">GA${arrow('publicDisclosureAvailabilityDate')}</th>
+            <th>Cloud</th>
+            <th>Eng Match</th>
+            <th onclick="setSort('modified')">Modified${arrow('modified')}</th>
+        </tr></thead><tbody>`;
+        for (const item of items) {
+            const statusCls = item.status === 'In development' ? 'status-indev' : item.status === 'Rolling out' ? 'status-rolling' : item.status === 'Launched' ? 'status-launched' : 'status-cancelled';
+            const clouds = (item.tagsContainer?.cloudInstances || []).map(t => `<span class="cloud-tag">${esc(t.tagName.replace('Worldwide (Standard Multi-Tenant)','WW'))}</span>`).join('');
+            const modified = item.modified ? new Date(item.modified).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+            const matchBadge = item.matchedEngId
+                ? `<span class="match-badge" title="${esc(item.matchReason || item.matchedEngTitle)}">${item.matchScore}% 🔗 ${item.matchedEngId}</span>`
+                : '<span class="match-badge none">—</span>';
+            html += `<tr onclick="showRoadmapDetail(${item.id})" style="cursor:pointer;">
+                <td class="item-id">${item.id}</td>
+                <td><span class="title-link">${esc(item.title)}</span></td>
+                <td><span class="status-badge ${statusCls}">${esc(item.status)}</span></td>
+                <td style="font-size:0.78rem;">${esc(item.publicPreviewDate || '—')}</td>
+                <td style="font-size:0.78rem;">${esc(item.publicDisclosureAvailabilityDate || '—')}</td>
+                <td>${clouds}</td>
+                <td>${matchBadge}</td>
+                <td style="font-size:0.78rem;white-space:nowrap;">${modified}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        content.innerHTML = html;
+    }
+
+    function renderEngTable(items) {
+        const content = document.getElementById('content');
+        if (!items.length) { content.innerHTML = '<div class="empty-state"><h3>No items match your filters</h3></div>'; return; }
+        const arrow = (col) => sortCol === col ? (sortAsc ? ' ↑' : ' ↓') : ' ↕';
+        let html = `<table><thead><tr>
+            <th onclick="setSort('id')">ID${arrow('id')}</th>
+            <th onclick="setSort('title')">Title${arrow('title')}</th>
+            <th onclick="setSort('state')">State${arrow('state')}</th>
+            <th onclick="setSort('assignedTo')">Assigned To${arrow('assignedTo')}</th>
+            <th onclick="setSort('iteration')">Iteration${arrow('iteration')}</th>
+            <th>Roadmap Match</th>
+            <th onclick="setSort('changed')">Changed${arrow('changed')}</th>
+        </tr></thead><tbody>`;
+        for (const item of items) {
+            const stateCls = item.state === 'Active' ? 'status-indev' : item.state === 'Closed' ? 'status-launched' : item.state === 'New' ? 'status-rolling' : '';
+            const changed = item.changed ? new Date(item.changed).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+            const matchBadge = item.matchedRoadmapId
+                ? `<a href="https://www.microsoft.com/en-ca/microsoft-365/roadmap?filters=&searchterms=${item.matchedRoadmapId}" target="_blank" class="match-badge" title="${esc(item.matchReason || item.matchedRoadmapTitle)}" style="text-decoration:none;">${item.matchScore}% 🔗 ${item.matchedRoadmapId}</a>`
+                : '<span class="match-badge none">—</span>';
+            html += `<tr onclick="showEngDetail(${item.id})" style="cursor:pointer;">
+                <td class="item-id">${item.id}</td>
+                <td><span class="title-link">${esc(item.title)}</span></td>
+                <td><span class="status-badge ${stateCls}">${esc(item.state)}</span></td>
+                <td style="font-size:0.8rem;">${esc(item.assignedTo || '—')}</td>
+                <td style="font-size:0.78rem;">${esc(item.iteration || '—')}</td>
+                <td>${matchBadge}</td>
+                <td style="font-size:0.78rem;white-space:nowrap;">${changed}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        content.innerHTML = html;
+    }
+
+    function renderMatchesTable(matches) {
+        const content = document.getElementById('content');
+        if (!matches.length) { content.innerHTML = '<div class="empty-state"><h3>No matches found</h3><p>No keyword matches between Engineering ADO and M365 Roadmap items.</p></div>'; return; }
+        let html = `<table><thead><tr>
+            <th>Score</th>
+            <th>M365 Roadmap Item</th>
+            <th>Roadmap Status</th>
+            <th>Engineering ADO Item</th>
+            <th>Eng State</th>
+        </tr></thead><tbody>`;
+        for (const m of matches) {
+            const rmStatusCls = m.roadmapStatus === 'In development' ? 'status-indev' : m.roadmapStatus === 'Rolling out' ? 'status-rolling' : m.roadmapStatus === 'Launched' ? 'status-launched' : '';
+            const engStateCls = m.engState === 'Active' ? 'status-indev' : m.engState === 'Closed' ? 'status-launched' : 'status-rolling';
+            html += `<tr>
+                <td><span class="match-badge" title="${esc(m.reason || '')}" style="cursor:help;">${m.score}%</span></td>
+                <td><a href="https://www.microsoft.com/en-ca/microsoft-365/roadmap?filters=&searchterms=${m.roadmapId}" target="_blank" class="item-id" style="color:var(--accent);text-decoration:none;">${m.roadmapId}</a> ${esc(m.roadmapTitle)}</td>
+                <td><span class="status-badge ${rmStatusCls}">${esc(m.roadmapStatus)}</span></td>
+                <td><a href="https://dev.azure.com/unifiedactiontracker/Technical%20Feedback/_workitems/edit/${m.engId}" target="_blank" class="title-link" style="color:var(--accent);">${m.engId}</a> ${esc(m.engTitle)}</td>
+                <td><span class="status-badge ${engStateCls}">${esc(m.engState)}</span></td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        content.innerHTML = html;
+    }
+
+    function showRoadmapDetail(id) {
+        const item = allItems.find(i => i.id === id);
+        if (!item) return;
+        const clouds = (item.tagsContainer?.cloudInstances || []).map(t => t.tagName).join(', ');
+        const platforms = (item.tagsContainer?.platforms || []).map(t => t.tagName).join(', ');
+        const phases = (item.tagsContainer?.releasePhase || []).map(t => t.tagName).join(', ');
+        const matchHtml = item.matchedEngId
+            ? `<div class="field"><div class="field-label">Matched Engineering Item</div><div class="field-value"><a href="https://dev.azure.com/unifiedactiontracker/Technical%20Feedback/_workitems/edit/${item.matchedEngId}" target="_blank" style="color:var(--accent);font-weight:600;">🔗 ${item.matchedEngId}</a> — ${esc(item.matchedEngTitle)} <span class="status-badge">${esc(item.matchedEngState)}</span><div style="margin-top:6px;font-size:0.75rem;color:var(--text-muted);background:#f0fdf4;padding:4px 8px;border-radius:4px;">💡 ${esc(item.matchReason || '')}</div></div></div>`
+            : '';
+
+        document.getElementById('detailPanel').innerHTML = `
+            <button class="close-btn" onclick="closeDetail()">✕</button>
+            <h2>${esc(item.title)}</h2>
+            <div class="field"><div class="field-label">Roadmap ID</div><div class="field-value">${item.id}</div></div>
+            <div class="field"><div class="field-label">Status</div><div class="field-value">${esc(item.status)}</div></div>
+            <div class="field"><div class="field-label">Description</div><div class="field-value">${esc(item.description || 'No description.')}</div></div>
+            <div class="field"><div class="field-label">Public Preview</div><div class="field-value">${esc(item.publicPreviewDate || '—')}</div></div>
+            <div class="field"><div class="field-label">General Availability</div><div class="field-value">${esc(item.publicDisclosureAvailabilityDate || '—')}</div></div>
+            <div class="field"><div class="field-label">Cloud Instances</div><div class="field-value">${esc(clouds || '—')}</div></div>
+            <div class="field"><div class="field-label">Platforms</div><div class="field-value">${esc(platforms || '—')}</div></div>
+            <div class="field"><div class="field-label">Release Phase</div><div class="field-value">${esc(phases || '—')}</div></div>
+            ${matchHtml}
+            <div class="field"><div class="field-label">Last Modified</div><div class="field-value">${item.modified ? new Date(item.modified).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}</div></div>
+            ${item.moreInfoLink ? `<a class="ms-link" href="${esc(item.moreInfoLink)}" target="_blank">📄 More Info</a>` : ''}
+            <a class="ms-link" href="https://www.microsoft.com/en-us/microsoft-365/roadmap?filters=&searchterms=${item.id}" target="_blank" style="margin-left:8px;">🌐 View on Microsoft</a>
+        `;
+        document.getElementById('detailOverlay').classList.add('open');
+    }
+
+    function showEngDetail(id) {
+        const item = engItems.find(i => i.id === id);
+        if (!item) return;
+        const matchHtml = item.matchedRoadmapId
+            ? `<div class="field"><div class="field-label">Matched Roadmap Item</div><div class="field-value"><a href="https://www.microsoft.com/en-ca/microsoft-365/roadmap?filters=&searchterms=${item.matchedRoadmapId}" target="_blank" class="match-badge" style="text-decoration:none;">🔗 ${item.matchedRoadmapId}</a> — ${esc(item.matchedRoadmapTitle)} (${esc(item.matchedRoadmapStatus)})<div style="margin-top:6px;font-size:0.75rem;color:var(--text-muted);background:#f0fdf4;padding:4px 8px;border-radius:4px;">💡 ${esc(item.matchReason || '')}</div></div></div>`
+            : '';
+        document.getElementById('detailPanel').innerHTML = `
+            <button class="close-btn" onclick="closeDetail()">✕</button>
+            <h2>${esc(item.title)}</h2>
+            <div class="field"><div class="field-label">ADO ID</div><div class="field-value"><a href="https://dev.azure.com/unifiedactiontracker/Technical%20Feedback/_workitems/edit/${item.id}" target="_blank" style="color:var(--accent);">${item.id}</a></div></div>
+            <div class="field"><div class="field-label">State</div><div class="field-value">${esc(item.state)}</div></div>
+            <div class="field"><div class="field-label">Assigned To</div><div class="field-value">${esc(item.assignedTo || '—')}</div></div>
+            <div class="field"><div class="field-label">Iteration</div><div class="field-value">${esc(item.iteration || '—')}</div></div>
+            <div class="field"><div class="field-label">Priority</div><div class="field-value">P${item.priority || '—'}</div></div>
+            <div class="field"><div class="field-label">Tags</div><div class="field-value">${esc(item.tags || '—')}</div></div>
+            ${matchHtml}
+            <div class="field"><div class="field-label">Changed</div><div class="field-value">${item.changed || '—'}</div></div>
+        `;
+        document.getElementById('detailOverlay').classList.add('open');
+    }
+
+    function closeDetail() {
+        document.getElementById('detailOverlay').classList.remove('open');
+    }
+
+    function esc(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+    loadRoadmap();
+    </script>
+</body>
+</html>

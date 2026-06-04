@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Purview for AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        :root {
+            --primary: #0078d4;
+            --primary-dark: #005a9e;
+            --primary-light: #e8f4fd;
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --nav-bg: #0f172a;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f8 50%, #eef1f8 100%); color: var(--text); line-height: 1.6; min-height: 100vh; }
+        nav { background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; padding: 0 2rem; height: 52px; gap: 0.25rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        nav .nav-brand { color: #fff; font-weight: 700; font-size: 1rem; margin-right: 2rem; white-space: nowrap; letter-spacing: -0.3px; }
+        nav a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.85rem; padding: 0.75rem 1rem; border-bottom: 2px solid transparent; transition: all 0.2s; height: 52px; display: flex; align-items: center; font-weight: 500; }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        nav a.active { color: #fff; border-bottom-color: #60a5fa; }
+        .refresh-btn { background: linear-gradient(135deg, #0078d4, #0091ff); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-weight: 600; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,120,212,0.3); }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,120,212,0.4); }
+
+        header { background: linear-gradient(135deg, #1e3a5f 0%, #0078d4 50%, #00a4ef 100%); color: white; padding: 2rem 2rem 1.5rem; position: relative; overflow: hidden; animation: fadeIn 0.6s ease-out; }
+        header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); border-radius: 50%; }
+        header h1 { font-size: 1.7rem; font-weight: 800; margin-bottom: 0.2rem; letter-spacing: -0.7px; position: relative; }
+        header p { opacity: 0.9; font-size: 0.9rem; position: relative; font-weight: 400; letter-spacing: -0.1px; }
+
+        .admin-container { max-width: 720px; margin: 2rem auto; padding: 0 2rem; animation: fadeInUp 0.5s ease-out 0.2s both; }
+        .card { background: rgba(255,255,255,0.8); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 2rem; margin-bottom: 1.5rem; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--text); }
+        .card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-select { width: 100%; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: inherit; outline: none; transition: all 0.2s; background: var(--card-bg); appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+        .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,120,212,0.12); }
+
+        .current-config { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; }
+        .current-config .label { font-weight: 600; color: #15803d; white-space: nowrap; }
+        .current-config .value { color: #166534; }
+
+        .save-bar { display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .save-btn { padding: 0.65rem 2rem; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .save-btn:hover { background: var(--primary-dark); }
+        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .save-status { font-size: 0.82rem; color: var(--text-muted); }
+
+        .info-box { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.85rem 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 0.82rem; color: #1e40af; margin-top: 1rem; }
+        .info-box svg { flex-shrink: 0; margin-top: 1px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="nav-brand">Purview for AI</span>
+        <a href="purview-ai-features.html" style="display:none;">Field Submitted Features</a>
+        <a href="purview-ai-technical-feedback.html">Field Feature Requests</a>
+        <a href="purview-ai-feature-requests.html">CRM Feature Requests</a>
+        <a href="purview-ai-engineering-ado.html">Engineering Feature Requests</a>
+        <a href="purview-ai-roadmap.html">Roadmap</a>
+        <a href="purview-ai-actions.html">Actions</a>
+        <a href="purview-ai-admin.html" class="active">⚙️ Admin</a>
+        <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()">🔄 Refresh Data</button>
+    </nav>
+
+    <header>
+        <h1>⚙️ Admin Settings</h1>
+        <p>Configure which CRM product the dashboard displays</p>
+    </header>
+
+    <!-- Loading banner -->
+    <div id="refreshBanner" style="display:none;position:fixed;top:52px;left:0;right:0;z-index:900;background:linear-gradient(135deg,#1d4ed8,#7c3aed);color:white;padding:14px 24px;align-items:center;justify-content:center;gap:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:Segoe UI,sans-serif;">
+        <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+            <svg id="refreshSpinner" width="20" height="20" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;"><style>@keyframes spin{to{transform:rotate(360deg)}}</style><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="3" fill="none"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+            <span id="refreshBannerText" style="font-weight:600;font-size:0.9rem;">Refreshing...</span>
+            <span id="refreshBannerTime" style="font-size:0.82rem;opacity:0.85;margin-left:8px;">0s elapsed</span>
+            <button id="stopRefreshBtn" onclick="stopRefresh()" style="margin-left:16px;padding:4px 14px;border:1.5px solid rgba(255,255,255,0.7);border-radius:6px;background:rgba(255,255,255,0.15);color:white;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;">⏹ Stop</button>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:10px;justify-content:center;">
+            <div style="flex:1;max-width:300px;height:6px;background:rgba(255,255,255,0.25);border-radius:3px;overflow:hidden;">
+                <div id="refreshProgressBar" style="height:100%;width:0%;background:white;border-radius:3px;transition:width 0.5s ease;"></div>
+            </div>
+            <span id="refreshProgressPct" style="font-size:0.75rem;opacity:0.9;min-width:32px;">0%</span>
+        </div>
+        <div id="refreshStep" style="margin-top:4px;font-size:0.78rem;opacity:0.8;text-align:center;"></div>
+    </div>
+
+    <div class="admin-container">
+        <div class="card">
+            <h2>CRM Product Filter</h2>
+            <p>Select which CRM products the dashboard displays. All pages will show data for the selected products after the next refresh.</p>
+
+            <div class="current-config">
+                <span class="label">Current products:</span>
+                <span class="value" id="currentProduct">Loading...</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="productSelect">Select Products to filter the CRM Feature Requests and Field Submitted Features pages</label>
+                <select class="form-select" id="productSelect" multiple style="height:160px;">
+                </select>
+                <small style="color:#64748b;font-size:0.75rem;">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Engineering ADO Area Paths</label>
+                <div id="areaPathList"></div>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                    <input type="text" class="form-select" id="areaPathNewInput" placeholder="e.g. IP Engineering\Purview for AI\1P Copilots\M365 Copilot" style="background-image:none;flex:1;">
+                    <button onclick="addAreaPath()" style="padding:6px 14px;border:1.5px solid #0078d4;border-radius:8px;background:#0078d4;color:white;cursor:pointer;font-size:0.82rem;font-weight:600;white-space:nowrap;">+ Add</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="uatServiceSelect">UATs Product Filter</label>
+                <select class="form-select" id="uatServiceSelect" multiple style="height:160px;">
+                </select>
+                <small style="color:#64748b;font-size:0.75rem;">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+
+            <div class="save-bar">
+                <button class="save-btn" id="saveBtn" onclick="saveConfig()" disabled>💾 Save</button>
+                <span class="save-status" id="saveStatus"></span>
+            </div>
+
+            <div class="info-box">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="#3b82f6"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 3v1.5h-1.5V4h1.5zm0 3v5h-1.5V7h1.5z"/></svg>
+                <span>After saving, click <strong>🔄 Refresh Data</strong> on any page to pull data for the new products. The daily auto-refresh will also use the new products.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const CRM_PRODUCTS = [{"name": "AAD Limit Increase/Deployment Planning", "id": "9bc6dab3-fbd7-eb11-bacb-002248243ada"}, {"name": "Across MTP suite", "id": "0d7420d7-1416-f011-9989-000d3a1978dc"}, {"name": "Across Purview", "id": "15206e0f-94bf-f011-bbd3-000d3a1e3d7d"}, {"name": "Agent 365 AI4S", "id": "51a58fdf-6b47-f111-bec7-7c1e52157f10"}, {"name": "Agent 365 S4AI", "id": "af20b86a-47a4-f011-bbd2-7c1e52596b73"}, {"name": "AI", "id": "7bb2b313-a019-ee11-8f6d-00224827349c"}, {"name": "AI Hub", "id": "67bf8d4a-a1e6-ee11-a203-7c1e5200ccb3"}, {"name": "AI Vulnerability Scanner\u200b", "id": "fe090fb1-6647-f111-bec7-7c1e52157f10"}, {"name": "Answers in Viva", "id": "530341a7-817f-ee11-8179-000d3a5603d3"}, {"name": "Archimedes", "id": "e89de97c-469b-ed11-83ff-000d3a1a7734"}, {"name": "Attack Simulation", "id": "72d9926e-eb50-ec11-8f8e-000d3a8f1674"}, {"name": "Attack Simulation Training", "id": "110b22f2-c075-eb11-a812-000d3a8c0957"}, {"name": "AZURE AD B2C", "id": "960bac38-88a1-e611-80e5-fc15b428ab70"}, {"name": "AZURE AD Basic", "id": "ec3eb41c-88a1-e611-80e5-fc15b428ab70"}, {"name": "Azure AD IGA", "id": "ded0941f-5424-ec11-b6e6-002248230855"}, {"name": "Azure Bastion", "id": "5625ad55-04f2-f011-8406-6045bdee11dc"}, {"name": "Azure CertMgr", "id": "d47de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Data Services", "id": "b4635b75-ecf9-e811-a978-000d3a137208"}, {"name": "Azure Data Storage Security", "id": "de7de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure DDos", "id": "d87de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Dedicated HSM", "id": "d67de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Disk Encryption", "id": "d07de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Firewall", "id": "da7de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Firewall Manager", "id": "4765c314-5451-ea11-a813-000d3a8c0516"}, {"name": "Azure Information Protection", "id": "1c3bb92b-478e-e511-80e5-3863bb2e2550"}, {"name": "Azure KeyVault", "id": "d27de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Azure Management", "id": "8222929a-4a00-e811-80f3-3863bb341e70"}, {"name": "Azure Network Security", "id": "0c05f936-6bbb-ea11-a812-000d3a8e0975"}, {"name": "Azure Virtual Desktop", "id": "20442f34-6575-e911-a97d-000d3a1be52c"}, {"name": "Azure WAF", "id": "dc7de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "CIEM", "id": "6d9305e7-5324-ec11-b6e6-002248230855"}, {"name": "Class Teams LTI", "id": "af855257-1042-ec11-8c62-000d3a1d68e9"}, {"name": "CommComp", "id": "5e7781a5-f5ed-eb11-bacb-000d3a538e82"}, {"name": "Compliance Manager", "id": "d14af3ed-2318-eb11-a813-000d3a8c07a8"}, {"name": "Compliance Manager as a Service", "id": "329b0f3c-5317-ec11-b6e7-000d3a13dfa2"}, {"name": "Copilot Agents in Entra", "id": "3cdc5014-ca60-f011-bec1-6045bdd63103"}, {"name": "Copilot for Web/Work", "id": "ce1fb06d-2670-ef11-a671-0022482b0f31"}, {"name": "Cross-Viva Apps", "id": "3fd412d5-817f-ee11-8179-000d3a5603d3"}, {"name": "Data and AI Community", "id": "a5e5ffd8-b640-ee11-be6e-6045bdd42bc1"}, {"name": "Data Protection as a Service", "id": "b6be4fd4-d60c-ec11-b6e6-0022481ee5d7"}, {"name": "Data Security Investigations (DSI)", "id": "1859f91d-2670-ef11-a671-0022482b0f31"}, {"name": "Data Security Posture Management (DSPM)", "id": "d6b039d2-efbd-ef11-b8e8-7c1e520b285c"}, {"name": "Defender for AI", "id": "5f0541ad-6fe7-ee11-a203-6045bdd6c551"}, {"name": "Defender for API", "id": "96633020-6898-ec11-b401-002248312034"}, {"name": "Defender for DevOps", "id": "2d06db59-f5d7-eb11-bacb-000d3a1ad0a0"}, {"name": "Defender for Serverless", "id": "c2e4cd53-65a3-ec11-9840-00224822bd4a"}, {"name": "Defender for Servers", "id": "a799d42d-8e27-ee11-bdf3-000d3a57d9e8"}, {"name": "DEX Handraiser", "id": "e9704bea-abe8-ed11-8849-000d3a5605c3"}, {"name": "DEX XDR", "id": "dc67b010-d70c-ec11-b6e6-0022481ee5d7"}, {"name": "DEX-H", "id": "9eb399ec-d60c-ec11-b6e6-0022481ee5d7"}, {"name": "DLM-RM", "id": "61fa6b92-759b-eb11-b1ac-0022481ed247"}, {"name": "DLP", "id": "12f5b869-7464-eb11-a812-000d3a1817e5"}, {"name": "Edge", "id": "c0b20019-e50a-ec11-b6e6-000d3a56f775"}, {"name": "eDiscovery", "id": "0c27ae60-759b-eb11-b1ac-0022481ed247"}, {"name": "EDU AADP", "id": "a2ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU AATP", "id": "a4ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU AIP", "id": "a6ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Development Tenant", "id": "fbcee295-6727-ed11-9db1-000d3a4d90e9"}, {"name": "EDU Excel", "id": "a8ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Exchange", "id": "aaee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Flipgrid", "id": "acee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Forms", "id": "aeee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Intune", "id": "15e7c3e8-fbd7-eb11-bacb-002248243ada"}, {"name": "EDU Learning Accelerators", "id": "9369cab3-9519-ee11-8f6d-00224827349c"}, {"name": "EDU LearningTools", "id": "b2ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU M365 Suite", "id": "a0ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU MCAS", "id": "b4ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Minecraft", "id": "b6ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU OneDrive", "id": "b8ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU OneNote", "id": "baee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Outlook", "id": "bcee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU PowerPoint", "id": "beee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU SharePoint", "id": "c0ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Sway", "id": "c2ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Teams", "id": "c4ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Teams Assignments Service", "id": "c6ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU WDATP", "id": "c8ee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Word", "id": "caee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "EDU Yammer", "id": "ccee5dd1-2418-eb11-a812-000d3a8c0378"}, {"name": "Enterprise Posture Management", "id": "777b2b72-1305-ee11-8f6e-00224827349c"}, {"name": "Entra Agent ID", "id": "c2a09a7e-7b89-f011-b4cc-6045bdffdb47"}, {"name": "Entra Copilot", "id": "f86ddb93-78fd-ef11-bae3-6045bda78cd4"}, {"name": "Entra External Auth Methods", "id": "b070e1a1-efd9-ee11-904d-000d3a1ab360"}, {"name": "Entra External ID", "id": "77a2366d-780e-ee11-8f6e-000d3a57d6e6"}, {"name": "Entra ID", "id": "17614b13-478e-e511-80e5-3863bb2e2550"}, {"name": "Entra ID Governance", "id": "68c41727-790e-ee11-8f6e-000d3a57d6e6"}, {"name": "Entra ID Protection", "id": "f35afe79-c220-f011-998a-7c1e520a61f2"}, {"name": "Entra Internet Access (SSE)", "id": "30f05cc6-5324-ec11-b6e6-002248230855"}, {"name": "Entra Internet M365 (SSE)", "id": "086790cd-e22a-ee11-bdf4-000d3a1ad37b"}, {"name": "Entra Permissions Management", "id": "3e4a6a13-862b-ee11-bdf4-000d3a1adf19"}, {"name": "Entra Security Service Edge (SSE)", "id": "5292eb88-5324-ec11-b6e6-002248230855"}, {"name": "Entra Suite", "id": "6ce86276-0ff3-ee11-a1fd-000d3a1b598b"}, {"name": "Entra Verified ID", "id": "03f7ae60-15ce-e911-a998-000d3a1beaae"}, {"name": "EPIC", "id": "29dd64ed-9619-ee11-8f6d-00224827349c"}, {"name": "Game Based Learning", "id": "dca71be0-02d9-ed11-a7c6-000d3a1f8332"}, {"name": "Global Training Partner", "id": "9fddeb6f-dbda-ee11-904c-6045bdf07c54"}, {"name": "Grade Sync", "id": "3c88a222-5898-ec11-b401-00224831220e"}, {"name": "Identity Threat Detection and Response (ITDR)", "id": "e2680170-51a5-f011-bbd3-7c1e52154f1c"}, {"name": "Immersive Reader", "id": "3fa19361-8815-ec11-b6e7-000d3a4eb127"}, {"name": "Industry Solutions", "id": "7cc7377a-9c26-ec11-b6e6-0022481d3677"}, {"name": "Insider Risk", "id": "b0093420-417a-ea11-a811-000d3a8c0957"}, {"name": "Insights Premium", "id": "b78a42dc-0392-eb11-a812-002248203427"}, {"name": "IoT Identity", "id": "05f7ae60-15ce-e911-a998-000d3a1beaae"}, {"name": "Learning Management Systems", "id": "49ec0c33-fc57-ec11-8f8f-00224828408b"}, {"name": "M365 Backup", "id": "44c30b81-1dcb-ee11-9079-0022482735ee"}, {"name": "M365 Compliance", "id": "45c652e8-9002-e911-a988-000d3a4e3ddb"}, {"name": "M365 Groups", "id": "6805f8ab-0392-eb11-a812-002248203427"}, {"name": "MDC Cloud Security Posture Management (CSPM)", "id": "1e665f01-8e27-ee11-bdf3-000d3a57d9e8"}, {"name": "MDC Containers", "id": "563650ad-8e27-ee11-bdf3-000d3a57d9e8"}, {"name": "MDC Database", "id": "0555dd88-8e27-ee11-bdf3-000d3a57d9e8"}, {"name": "MDC Storage", "id": "57ac8a5c-8e27-ee11-bdf3-000d3a57d9e8"}, {"name": "Microsoft 365 Defender (MTP)", "id": "70772b4d-a238-ea11-a813-000d3a8c0957"}, {"name": "MICROSOFT ATA", "id": "c8303407-478e-e511-80e5-3863bb2e2550"}, {"name": "MICROSOFT CAS-D", "id": "c9289f21-9fa8-e711-80ec-3863bb2e33b0"}, {"name": "Microsoft CoPilot", "id": "b60c3a67-8e1c-ee11-9cbd-000d3a5605c3"}, {"name": "Microsoft Defender Experts (DEX)", "id": "36dd9921-53df-ed11-8847-000d3a57dd03"}, {"name": "Microsoft Defender External Attack Surface Management", "id": "f669eb7c-c285-ec11-93b0-002248323f6f"}, {"name": "Microsoft Defender for Business (MDB)", "id": "b2d08da6-a856-ee11-8df0-000d3a57dd03"}, {"name": "Microsoft Defender for Cloud", "id": "6f4ed4a0-3a17-e611-80e3-fc15b4286704"}, {"name": "Microsoft Defender for Cloud Apps", "id": "92309586-3a17-e611-80e3-fc15b4286704"}, {"name": "Microsoft Defender for Endpoint (MDATP)", "id": "92851710-7512-e811-811b-3863bb36fd00"}, {"name": "Microsoft Defender for Identity", "id": "38b6e9c2-697c-e711-80fe-c4346bacf588"}, {"name": "Microsoft Defender for Individuals", "id": "1814d3fc-a856-ee11-8df0-000d3a57dd03"}, {"name": "Microsoft Defender for IoT", "id": "ce7de0bd-d217-e911-a97b-000d3a1be9b4"}, {"name": "Microsoft Defender for Office 365 (Office ATP)", "id": "07f7ae60-15ce-e911-a998-000d3a1beaae"}, {"name": "Microsoft defender for vulnerability management (MDVM)", "id": "c3a54505-98f5-ed11-8848-000d3a1abe9e"}, {"name": "Microsoft Defender Threat Intelligence", "id": "5ad5554a-eb50-ec11-8f8e-000d3a8f1674"}, {"name": "Microsoft Education Solution", "id": "7faa972e-d76e-ed11-81ac-000d3a1f4ab5"}, {"name": "Microsoft Endpoint Management Insiders", "id": "4c8b1c30-b7d5-ec11-a7b5-000d3a1ab189"}, {"name": "Microsoft Graph", "id": "36639587-9a1f-eb11-a813-000d3a8c09cf"}, {"name": "Microsoft Graph - Applications", "id": "1b9209ca-2a1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Calendar", "id": "f74c0c3c-2b1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Change notifications", "id": "0a4a6eb2-2b1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Cloud communications", "id": "5d47fdf9-2b1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Connectors", "id": "e166e882-0b6a-eb11-b0b0-000d3a8c07a8"}, {"name": "Microsoft Graph - Cross-device experiences", "id": "e9c4f22d-2c1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Customer booking", "id": "357ce366-2c1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Data access", "id": "62a8638e-2c1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Devices and apps", "id": "85b2b5ba-2c1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Education", "id": "1a379028-2d1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Extensions", "id": "a2220657-2d1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Files", "id": "59b5f497-2d1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Financials", "id": "b71bb6c7-2d1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Groups", "id": "59a6ed58-2a1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Identity and access", "id": "0ad4eff0-2d1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Mail", "id": "dad42a1e-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Notes", "id": "3c27e248-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - People and workplace intelligence", "id": "05b0de94-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Personal contacts", "id": "f6e413c8-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Reports", "id": "f1be82ed-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - SDKs", "id": "482eba1a-2f1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Search", "id": "b684764f-2f1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Security", "id": "5fcacf62-2f1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Sites and lists", "id": "f292d6df-2f1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Tasks and plans", "id": "00c3acca-2f1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Teamwork", "id": "95e6963e-301f-eb11-a813-000d3a8c0957"}, {"name": "Microsoft Graph - To-do tasks", "id": "f5aa4554-301f-eb11-a813-000d3a8c0957"}, {"name": "Microsoft Graph - Toolkit", "id": "a6196cb0-301f-eb11-a813-000d3a8c0957"}, {"name": "Microsoft Graph - User Notifications", "id": "3f53936e-2e1f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Users", "id": "a1ca2240-291f-eb11-a813-000d3a8c0080"}, {"name": "Microsoft Graph - Workbooks and charts", "id": "f08b89a3-301f-eb11-a813-000d3a8c0957"}, {"name": "MICROSOFT INTUNE", "id": "83dcad25-478e-e511-80e5-3863bb2e2550"}, {"name": "Microsoft INTUNE SDK", "id": "e91e840e-028c-eb11-a812-00224822091b"}, {"name": "Microsoft Managed Desktop (MMD)", "id": "a0d13e68-26bc-e811-a962-000d3a15a7d1"}, {"name": "Microsoft Search", "id": "258a00a4-b0f7-ea11-a815-000d3a8e0975"}, {"name": "Microsoft Search \u2013 Graph Connectors", "id": "2f4633c4-c2e8-eb11-bacb-000d3a53846e"}, {"name": "Microsoft Security Exposure Management", "id": "08851beb-efd9-ee11-904d-000d3a1ab360"}, {"name": "Microsoft Sentinel", "id": "6de35619-e704-e911-a988-000d3a4e3ddb"}, {"name": "Microsoft Sentinel Platform", "id": "22275dce-6bc9-ee11-9079-000d3a1dde7b"}, {"name": "Microsoft SSE", "id": "d9b0c043-862b-ee11-bdf4-000d3a1adf19"}, {"name": "Microsoft Teams Room Premium", "id": "728622a5-ecda-ea11-a813-000d3a8c0516"}, {"name": "Minecraft Education product", "id": "e6420eb9-9df3-ed11-8849-000d3a1f8332"}, {"name": "MIP", "id": "eee283f1-3507-ea11-a994-000d3a15a7d1"}, {"name": "MTE Azure", "id": "acb0e31c-d70c-ec11-b6e6-0022481ee5d7"}, {"name": "MTEClassic", "id": "12cb56af-1cc6-ec11-a7b5-0022482d39d4"}, {"name": "MXDR Partner", "id": "90b5b2a5-6639-ed11-bba2-000d3a18d7ed"}, {"name": "Network Detection and Response", "id": "4965c314-5451-ea11-a813-000d3a8c0516"}, {"name": "One SOC", "id": "67a580cc-efd9-ee11-904d-000d3a1ab360"}, {"name": "OneDrive", "id": "b4eb9fd9-81c8-ea11-a812-000d3a53a8cd"}, {"name": "OneDrive LTI", "id": "fc595f17-1042-ec11-8c62-000d3a1d68e9"}, {"name": "Open Education Analytics", "id": "8396611f-9578-eb11-a812-000d3a8c0080"}, {"name": "POC as a Service for Data Security", "id": "782b52d4-6db7-ed11-b596-00224827398f"}, {"name": "POCaaS", "id": "d7422095-7fe2-ed11-8848-000d3a1f8dd6"}, {"name": "Privacy Management", "id": "82ceb535-672a-ec11-b6e6-000d3a18da85"}, {"name": "Project AIM", "id": "bc6ce463-0828-f111-88b4-7c1e52157f8b"}, {"name": "Project Cortex", "id": "ed2888f3-81c8-ea11-a812-000d3a53a8cd"}, {"name": "Project Maui", "id": "0a5dbaa0-163b-ec11-8c62-00224825a966"}, {"name": "Purview Audit", "id": "e649d016-a1e6-ee11-a203-7c1e5200ccb3"}, {"name": "Purview Data Governance", "id": "2a7ddc26-da10-ea11-a811-000d3a8c0080"}, {"name": "Purview Data Lifecycle Management", "id": "b919d4d0-c787-f011-b4cb-7c1e520d7246"}, {"name": "Purview for AI", "id": "eee1947c-0ea7-ef11-8a69-6045bdee9a10"}, {"name": "Purview for Copilot", "id": "d166c7c3-032a-ee11-bdf4-000d3a1ad1e2"}, {"name": "Purview SDK", "id": "f4f661aa-fd65-ef11-a671-0022482754bd"}, {"name": "Remote Desktop Services", "id": "6001f77e-fe4c-e611-80f1-fc15b428aaa8"}, {"name": "Reporting and Analytics for Microsoft Purview (RAMP)", "id": "d3a4a244-b038-ed11-9db0-000d3a1f4367"}, {"name": "SCCM", "id": "1310310e-d2eb-e511-80e0-c4346bac4300"}, {"name": "School Data Sync", "id": "030c7df7-0192-eb11-a812-002248203427"}, {"name": "School Data Sync \u2013 Admin API", "id": "43a3b80f-9578-eb11-a812-000d3a8c0080"}, {"name": "School Data Sync - CSV", "id": "95486acd-9478-eb11-a812-000d3a8c0080"}, {"name": "School Data Sync \u2013 Deployment", "id": "10b9ccf9-9478-eb11-a812-000d3a8c0080"}, {"name": "School Data Sync - Grade Sync", "id": "873642ea-9478-eb11-a812-000d3a8c0080"}, {"name": "School Data Sync - OneRoster API", "id": "7fb3e0d9-9478-eb11-a812-000d3a8c0080"}, {"name": "SCIM", "id": "3bb4b01b-f487-ec11-93b0-0022482db2f4"}, {"name": "Secure Score", "id": "24836e35-01e9-ea11-a813-000d3a8e0975"}, {"name": "Security Copilot", "id": "43f9b54e-ddcd-ed11-a7c6-000d3a1ab7d1"}, {"name": "Security Copilot for Intune", "id": "315c13f9-fd65-ef11-a671-0022482754bd"}, {"name": "Security Copilot for Purview", "id": "f2969013-80b7-ef11-b8e8-7c1e5257a79b"}, {"name": "Security Copilot in Defender", "id": "f4cd3e12-12ba-f011-bbd3-000d3a1bd904"}, {"name": "Security Copilot in Entra", "id": "359490d2-d27c-f011-b4cc-000d3a193913"}, {"name": "Security Store", "id": "8630d433-76b4-f011-bbd3-7c1e5215478b"}, {"name": "SharePoint", "id": "d5edf690-81c8-ea11-a812-000d3a53a8cd"}, {"name": "SharePoint Advanced Management", "id": "f18706ee-0ad5-ed11-a7c7-000d3a5605c3"}, {"name": "SharePoint Embedded", "id": "2a7c439f-469b-ed11-83ff-000d3a1a7734"}, {"name": "SharePoint Pages", "id": "3e218968-0dce-ed11-a7c6-000d3a57dd03"}, {"name": "SharePoint Premium", "id": "6cfb7db2-8d1c-ee11-9cbd-000d3a5605c3"}, {"name": "Skills in Viva", "id": "1691422c-ad6d-ee11-8179-000d3a1ab5c3"}, {"name": "Syntex", "id": "b4b1ccf5-fcb3-eb11-8236-000d3a9b3816"}, {"name": "Syntex Archive", "id": "fbab4f0d-469b-ed11-83ff-000d3a1a7734"}, {"name": "Syntex Enhanced Restore", "id": "c7ec7852-469b-ed11-83ff-000d3a1a7734"}, {"name": "Team Rooms", "id": "ced25cef-5317-ec11-b6e7-000d3a13dfa2"}, {"name": "Teams Anywhere", "id": "1ff65408-5417-ec11-b6e7-000d3a13dfa2"}, {"name": "Teams Meetings LTI", "id": "11262d5c-0f42-ec11-8c62-000d3a1d68e9"}, {"name": "Universal Print (UP)", "id": "4dc9c7bf-1ca9-eb11-b1ac-0022481f2886"}, {"name": "Viva Amplify", "id": "d95cc465-411e-ed11-b83d-000d3a4d9c20"}, {"name": "Viva Connections", "id": "d9b59712-7075-eb11-a812-000d3a8c06d9"}, {"name": "Viva Engage", "id": "fd8656b6-411e-ed11-b83d-000d3a4d9c20"}, {"name": "Viva Glint", "id": "eb8329b0-7f7f-ee11-8179-000d3a5603d3"}, {"name": "Viva Goals", "id": "687d54c6-14c6-ec11-a7b5-0022482d3d1b"}, {"name": "Viva Insights", "id": "52a86c88-6521-ec11-b6e6-00224825348f"}, {"name": "Viva Learning", "id": "804eefa6-6521-ec11-b6e6-00224825348f"}, {"name": "Viva Pulse", "id": "deca079e-411e-ed11-b83d-000d3a4d9c20"}, {"name": "Viva Sales", "id": "92604ddb-411e-ed11-b83d-000d3a4d9c20"}, {"name": "Viva Suite", "id": "1a56cdbe-acab-ec11-9840-000d3a1c7264"}, {"name": "Viva Topics", "id": "9d797ada-fcb3-eb11-8236-000d3a9b3816"}, {"name": "WINDOWS", "id": "85a4a66b-a6be-e611-80eb-fc15b428ab70"}, {"name": "Windows 365", "id": "4d3f0731-ec19-eb11-a813-000d3a8c0c59"}, {"name": "Windows Autopatch", "id": "b1500a74-94fb-ec11-82e5-000d3a10a4b9"}];
+    const UAT_SERVICE_NAMES = [".NET, .NET Core", "3P modules", "3rd party features", "A and Flex series", "AAD", "AAD AuthN", "AAD Connect", "AAD Custom Roles", "AAD PowerShell", "AI & machine learning", "AI Agent Service", "AI Agents", "AI Platform Data", "AI Search", "AI Services", "AI builder capacity", "AI capabilities", "AI driven agent suggestions (knowledge article / similar cases)", "AI, ML & NLP", "AIR Containers Reference Application", "AKS - Landing Zone Accelerator", "ALM / Feedback Loop / ML Ops", "ALM Strategy", "ALM and developer experience", "API Management (APIM)", "APIM - Landing Zone Accelerator", "APIs", "APIs & embedded", "ARM Core", "ARO - Landing Zone Accelerator", "ASE", "AVD", "Accelerated Networking", "Accelerators", "Access", "Access, security & ALM", "Accessibility", "Account protection", "Account, contact & activity management", "Accounts payable", "Accounts receivable", "Acquire assets", "Acquire to dispose", "Action Groups", "Activate digital selling", "Activities", "Admin & activation", "Admin & governance", "Admin experience & compliance", "Administration", "Administration and governance", "Advance Threat Protection", "Advanced Find", "Advisor Recommendations - AKS", "Advisor Recommendations - ARM", "Advisor Recommendations - Azure Cost Management", "Advisor Recommendations - Data Explorer", "Advisor Recommendations - Monitor", "Advisor Recommendations - VM", "Advisor Recommendations - Virtual Networks", "Agent report", "AgentID", "Agents", "Agreements", "Airgapped Cloud (AGC)", "Alerts", "All emissions", "Always on service", "Amplify", "Analysis Services", "Analytics", "Analytics & insights", "Analytics - product map", "Analytics - shipping", "Analytics - supply & demand", "Analytics - supply & demand simulation", "Analytics - vendor performance", "Analytics / Power BI", "Analytics simulation", "Analyze case performance", "Analyze financial results", "Analyze service operations", "Analyze vendor performance", "Analyze warehouse performance", "Anomaly Detection", "Anycast", "App Center", "App Configuration", "App Monitoring", "App Service", "App Service - Landing Zone Accelerator", "App Service Diagnostics", "App Service for Linux Containers", "App Service for Windows Containers", "App Service, Functions and Logic Apps on Azure Arc", "App Templates", "App for Outlook", "App foundation", "App pass capacity", "App settings", "App shell", "AppAttach", "AppCat", "AppV", "Applicant tracking/recruiting", "Application", "Application Gateway", "Application Gateway WAF", "Application Gateway for Containers", "Application Proxy", "Application lifecycle management", "Application lifecycle management (ALM)", "Approval flows", "Arc enabled Kubernetes", "Arc enabled data services", "Arc enabled k8s", "Arc enabled servers", "Arc-enabled Machine Learning", "Arc-enabled VMWare", "Asset library", "Asset management", "Asset productivity", "Assignment", "Assignments", "Assistant & Assistant studio", "Asynchronous service", "Attach common data model folder", "Attachment management", "Attributebased access control ABAC RBAC", "Audit", "Auditing & change control", "Authentication", "Authoring", "AutoScale", "Automatic record creation rules", "Autopilot Service", "Availability Zones", "Availability/reliability", "Avalara", "Avere vFXT", "Azure API Center", "Azure Active Directory Domain Services", "Azure Advisor", "Azure Advisor Recommendation", "Azure Attestation Services", "Azure Automanage", "Azure Automation", "Azure Backup Management, Control Plane", "Azure Backup for Database", "Azure Backup for IaaS VM", "Azure Backup for On-premises", "Azure Backup for SAP", "Azure Backup for Storage", "Azure Batch", "Azure Blueprints", "Azure Chaos Studio", "Azure Communication Services", "Azure Compliance Fairfax", "Azure Container Storage", "Azure CxP", "Azure Data Lake Storage (ADLS)", "Azure Data Manager for Energy", "Azure Data Microsite", "Azure Data Movement", "Azure Database Migration Service", "Azure Database for MariaDB", "Azure Database for MySQL", "Azure Database for PostgreSQL", "Azure Database for PostgreSQL: Flexible Server", "Azure Database for PostgreSQL: Hyperscale (Citus)", "Azure Database for PostgreSQL: Single Server", "Azure Databricks", "Azure Deployment Environments", "Azure DocumentDB", "Azure Extended Zones", "Azure Government", "Azure Guest Patching Service", "Azure Health Data Services", "Azure HorizonDB", "Azure IoT Operations", "Azure Lab Services", "Azure Lighthouse", "Azure Load Testing", "Azure LockBox", "Azure Managed Instance for Apache Cassandra", "Azure Managed Lustre", "Azure Maps", "Azure Marketplace", "Azure Migrate", "Azure Monitor Platform Feedback", "Azure Notification Hubs", "Azure OpenAI (Azure Direct Models)", "Azure PayGo", "Azure Platform Parity", "Azure Playwright Service", "Azure Policy", "Azure Policy for AKS", "Azure Portal", "Azure Portal BlackForest", "Azure Portal Demo Subscriptions", "Azure Portal Mooncake", "Azure Quantum", "Azure Resource Graph", "Azure Resource Mover", "Azure Resource Tags", "Azure SDKs", "Azure SQL Edge", "Azure Savings Plan", "Azure Security", "Azure Serial Console", "Azure Service Fabric", "Azure Service Health", "Azure Spatial Services", "Azure Spring Apps", "Azure Spring Apps - Landing Zone Accelerator", "Azure Stack AKS-HCI", "Azure Stack Edge", "Azure Stack HCI", "Azure Stack Hub", "Azure Status (board)", "Azure Stream Analytics", "Azure Subscriptions and Billing", "Azure Synapse", "Azure VMware Solution", "Azure Web Application Firewall", "Azure Web PubSub service", "Azure Well-Architected", "B and F-series (Intel)", "B&M store operations (sales channel)", "B2B", "B2C", "BCDR, Migration,BYOS", "BI and Analytics Design", "Backend work for beethoven onboarding", "Banking customer engagement", "Bastion", "Batch", "Benefits", "BigQuery", "Bigcommerce", "Bing Search APIs", "BizTalk", "Bookings", "Bot Service (Legacy)", "Bot report", "Branching", "Branding", "Brazil localization", "Bring your own connector", "Bring your own data lake", "Bring your own model", "Budget and analyze maintenance costs", "Budget capital projects", "Budgeting", "Bulk edit", "Business Blockers", "Business card reader", "Business process flows", "Business rules", "CDN", "CICD", "CX Observe", "Calculations", "Call center (sales channel)", "Calling", "Canvas App Controls", "Canvas Apps - Monitor", "Canvas app designer", "Canvas apps", "Capacity", "Capture project expenses", "Care management", "Case admin experience", "Case to resolution", "Case/conversion volume prediction", "Cash & bank management", "Categorize products and services", "Category classification", "Certificates", "Channel Integration Framework", "Channels", "Chart designer", "Charts", "Chat client", "Classic VM", "Classic workflows", "Classification", "Classwork", "Client (Windows/Mac)", "Client API", "Close financial periods", "Cloud Adoption Framework", "Cloud Services", "Cloud Shell", "Cloud flows", "Co-browse", "Collaboration & teams integration", "Collaboration manager", "Columns", "Command bar", "Command bar designer", "Commerce", "Commerce financials", "Commerce supply chain", "Communication Compliance", "Company Portal Android", "Company Portal MAC", "Company Portal iOS", "Compensation", "Compliance", "Compliance Alerts", "Compliance Manager", "Compliance and security", "Compliance: general", "Comply with audit and regulatory requirements", "Compute Resource Provider (CRP)", "Conditional Access", "Confidential Computing", "Configurable business documents", "Configurable business documents platform", "Configuration guide", "Configuration migration tool", "Configuration of intelligent inventory: stock reorder recommendations", "Connect Health", "Connected & frontline worker", "Connected field service", "Connection references/environment variables", "Connections", "Connectors", "Connectors & gateways", "Consent & compliance", "Container Apps", "Container Apps - Landing Zone Accelerator", "Container Networking Azure CNI Azure NetAgent", "Containers", "Containers ACI", "Containers ACR", "Containers AKS", "Containers OpenShift", "Content Hub", "Content Safety", "Content Understanding", "Content authoring", "Content management", "Control product engineering changes", "Control production quality", "Control vendor managed inventory and consignment inventory", "Conversation intelligence", "Conversation report", "Conversational Language Understanding (CLU)", "Copilot Chat", "Copilot Control System", "Copilot Dashboard", "Copilot Notebooks, Pages", "Copilot Usage in MAC", "Copilot in Microsoft 365 apps (W,XL,ON, OL, PPT)", "Copilot in SharePoint, OneDrive, Copilot Search", "Copilot in Teams", "Core customer service (case management/queues/SLA)", "Cosmos Analytics (Synapse Link)", "Cosmos DB Cassandra API", "Cosmos DB Core API (SQL)", "Cosmos DB Gremlin API", "Cosmos DB Mongo API", "Cosmos DB for PostgreSQL", "Cost accounting", "Cost management", "Costing, Pricing and Billing", "Create and manage accounts for servicing", "Create and manage sales", "Create and manage service resources", "Create and process promissory notes", "Create cases", "Create work orders", "Custom API", "Custom Service", "Custom Vision", "Custom actions", "Custom channel/tile", "Custom pages", "Custom reports & extensibility", "Customer Experience Platform", "Customer Service Hub", "Customer Service Insights", "Customer Service workspace", "Customer Voice integration", "Customer journey design", "Customer onboarding", "Customer relationship management and loyalty", "Customization", "Cutover strategy", "D/Dal/Ea (AMD) series", "D/Dl/E (Intel) series", "DDOS", "DNS", "DNS Private Zones", "Dapr", "Dashboards", "Dashboards & reports", "Data", "Data Collection Rule", "Data Connectors", "Data Explorer", "Data Factory", "Data Lake", "Data Lake Graph", "Data Lifecycle Management", "Data Loss Prevention", "Data Manager for Industry", "Data Map", "Data Policy", "Data Security Investigations", "Data Security Posture Management (DSPM)", "Data collaboration - creation", "Data collaboration - review, edit & delete", "Data connectors & gateways", "Data connectors & providers", "Data delete", "Data edit", "Data export or download", "Data export service", "Data governance & compliance", "Data ingestion", "Data ingestion - activity data", "Data ingestion - reference data", "Data integration", "Data integration framework", "Data management", "Data management & Power Query", "Data management & data entities", "Data management, ingestion and schema", "Data migration strategy", "Data model", "Data model design", "Data onboarding", "Data review", "Data settings", "Data sharing", "Data status monitoring, quality and error triage", "DataGrid", "DataMap", "Databox", "Datacenter regions", "Dataverse & common data model", "Dataverse connector", "Dataverse for Teams", "Dataverse storage capacity (database, file, log)", "Dedicated HSM", "Dedicated Host", "Defender CSPM", "Defender External Attack Surface Management", "Defender Threat Intelligence", "Defender Threat and Vulnerability Management", "Defender for AI Services", "Defender for APIs", "Defender for App Service", "Defender for Azure SQL Databases", "Defender for Cloud - AGC", "Defender for Cloud Apps", "Defender for Containers", "Defender for Devops Security", "Defender for Endpoint", "Defender for Identity", "Defender for IoT", "Defender for Keyvault", "Defender for Office", "Defender for Resource Manager", "Defender for SQL Servers on Machines", "Defender for Server", "Defender for Storage", "Define and manage employee benefits", "Define and manage employee compensation", "Define and manage warehouse operations", "Define customer service operations", "Define employee skills and competencies", "Define policies and procedures for procurement", "Define position and organizational structure", "Define procurement catalogs", "Define product and service costing", "Define production strategies", "Define sales strategy", "Define strategic and operational plans", "Define the organization structure, companies, and chart of accounts", "Deliver project work", "Delve", "Demand planning & optimization", "Deployments", "Depreciate, amortize, and adjust fixed assets", "Design and configure manufactured products", "Design statutory, tax, and localization requirements", "Desktop flows", "Dev improvements", "DevOps", "DevTest Lab", "Develop sourcing strategies", "Diagnostics", "Digital advertising solutions", "Digital messaging channel", "Digital twin", "Dimensions & SDAF", "Disks", "Document Intelligence", "Document end to end solution", "Documentation - Azure Compute", "Domain Services", "Dp/Dpl/Ep (ARM) VMs", "Dual-write", "Duplicate detection", "Durable Functions", "Dynamics 365 Implementation Guide", "Dynamics 365 integration", "E-SAN", "E-commerce (sales channel)", "E-invoicing & payment localization", "E2E Data Ingestion and management experience", "EDU Insights", "EasyRepro", "Edge", "Egress", "Elastic tables", "ElasticSearch", "Electronic reporting", "Email", "Email editor", "Email engagement", "Email sending", "Email templates & signatures", "Embedded insights", "Emissions impact dashboard", "Employee development", "Employee experience", "Engage", "Engineering change management", "Enrichments", "Enterprise", "Enterprise Apps/SSO", "Enterprise data modeling & Azure analysis", "Enterprise deployment & adoption", "Entity extraction", "Entra Identity Governance", "Entra Permissions Management", "Environment management", "Epic on Azure", "Essentials (Metrics & Logs)", "Establish a knowledge base", "Establish servicing policies and procedures", "Establish stocking policies", "Estimate and quote sales", "Evaluation/Observability", "Event Grid", "Event Hub", "Event planning & management", "Event triggers", "Events", "Excel", "Excel Experience", "Exchange Online", "Execute production operations", "Expense tracking", "Expenses", "Experiences", "Export to Data Lake", "ExpressRoute", "Extended Security Updates", "Extensibility", "F&O UX/Forms", "FCI SQL interop Failover Clustering Cloud Witness File Server Storage Spaces", "FHIR sync agent/Azure proxy", "FPGA (NP-series) VM", "FSI churn model", "FXv2", "Face API", "Failover Clustering Cloud Witness File Server Storage Spaces", "Feedback analysis", "Field service", "Field service core functionality", "Files", "Files/Calendar/People", "Finance", "Finance and operations", "Finance insights", "Financial institutions", "Financial management", "Financial reporting & management", "Firewall", "Firewall Manager", "First Party Voice channel", "First party enrichments", "Fit to partner's methodology", "Fixed asset management", "Flexe", "Flexible fulfillment", "Flow mobile app", "Forecast demand", "Forecast supply", "Forecast to plan", "Forecasting (& premium forecasting)", "Form processing", "Formatting", "Forms", "Forums", "Foundry Portal", "Foundry SDK", "Fraud protection & loss prevention", "Front Door", "Frontline Worker", "Fufillement optimization", "Fulfillment risk", "Functions", "Fundamentals", "Fundraising & engagement", "GDPR", "GPU VM", "Gaming", "Gap solution design", "Gateway Load Balancer", "Gateways", "GearUp Checklist", "General", "General ledger", "Generate reports", "GitHub - Billing", "GitHub - Copilot", "GitHub - Platform & Enterprise", "GitHub - Productivity", "GitHub - Security Products", "GitHub Copilot App Modernization", "Gl localization", "Glint", "Global Secure Access", "Global address book", "Global inventory accounting", "Globalization", "Go-live readiness", "Goal management", "Goals", "Govern", "Govern projects", "Governance", "HANA LI", "HDInsight", "HDInsight on AKS", "HPC (H-series) VM", "HPC CycleCloud", "HR compliance", "Health Data Services FHIR Service", "Healthcare APIs/FHIR service", "Healthcare data model", "Hire to retire", "Historical analytics for Customer Service", "Home health", "Homepage", "Human resources", "ID Reader", "IDPS", "IPAM", "ISE", "ISV and marketplace apps", "ISV capability provisioning and access control", "ITPro/Admin", "Identify and qualify leads", "Identity", "Identity Protection", "Image Builder", "Images", "Immersive Reader", "Immersive Reader Cognitive Service Test", "Implementation guide", "Import data & Power Query", "Import data from dataverse", "Import data using power query connectors", "Import my supplier data (IMSD)", "In-app feedback submissions", "In-app marketing (campaigns)", "In-app notifications", "In-app support", "Incidents/Alerts/Analytics Rules", "India localization", "Inference", "Information Barriers", "Information Protection", "Infra Monitoring", "Insider Risk Management", "Insights", "Insights & intelligence", "Insights and recommendations", "Insights extract", "Inspections", "Instance metadata service", "Integration", "Integration - Landing Zone Accelerator", "Integration - teams, survey and case", "Integration design", "Integration using Dual-write", "Integration with 3rd party systems", "Integration with Dual-write", "Integrations", "Integrations & extensibility", "Integrations without Dual-write", "Intelligent fraud prevention", "Intelligent stores", "Intraday analytics for omnichannel", "Introduce new products and services", "Intune Advanced Analytics", "Intune Advanced Endpoint Analytics", "Intune Cloud PKI", "Intune Endpoint Privilege Mgmt", "Intune Enterprise App Management", "Intune P2", "Intune Remote Help", "Intune Suite", "Inventory & purchase orders", "Inventory management", "Inventory to deliver", "Inventory visibility", "Invoices", "Invoicing", "IoT Central", "IoT Solutions", "Issue and settle vendor payments", "Issue customer invoices", "KEDA", "Key Vault", "Key phrase extraction", "Knowledge management", "Knowledge search insights", "L-series VMs", "LIFTR", "LTI Apps (LMS Integrations)", "Landed cost", "Language", "Language detection", "Languages", "Lead and opportunity management", "Lead management", "Lead management & LinkedIn Integration", "Learning", "Learning & knowledge management", "Learning management system", "Lease an asset (lessee)", "Lease an asset (lessor)", "Leave & absence", "Licensing", "Licensing and provisioning", "Lifecycle services", "Linux", "Linux Red Hat RHEL", "Linux SDK", "Linux SUSE Debian", "Load Balancer", "Lobe/image classification", "Localization", "Log Analytics", "Logic Apps", "Loop", "Loss prevention", "Low Code Plugins - Runsafe", "M-series VM", "M365 Archive", "M365 Backup", "MCfS - Microsoft Sovereign Cloud (Public)", "MFA", "MLOps", "MQTT Broker", "MS Docs / Documentation", "Maintain and manage cash and bank transactions", "Maintain and service internal assets", "Maintain customer asset details", "Maintain inventory levels", "Maintain product data", "Make adjustments to project transactions", "Maker Portal - Model-driven app designer", "Maker portal", "Manage asset lease (lessee)", "Manage asset lease (lessor)", "Manage budgets", "Manage cases", "Manage currencies, exchange rates, and exchange rate providers", "Manage customer relationships", "Manage customer returns", "Manage employee and manager requests", "Manage employee learning and development", "Manage employee performance", "Manage employee shifts, schedules, and capacity", "Manage freight and transportation", "Manage fund accounting", "Manage inventory costs", "Manage inventory quality", "Manage occupational health and safety", "Manage operational details of assets", "Manage product and services pricing", "Manage product assortments and catalogs", "Manage product lifecycle", "Manage project budgets", "Manage project communications", "Manage project contracts", "Manage project opportunities", "Manage project quality", "Manage project quotations", "Manage project risks", "Manage project scope and schedule", "Manage project stakeholders", "Manage project supply chain", "Manage store operations", "Manage the employee lifecycle", "Manage travel and expenses", "Manage vendor debits and chargebacks", "Manage vendor relationships", "Managed Applications Service Catalog", "Managed Grafana", "Managed HSM", "Managed Identities", "Managed environments", "Map", "Marketing", "Marketing pages, forms & surveys", "Master Data Services", "Master planning & forecast", "Match", "Math Assistant", "Math Coach/Progress", "Measures", "Media Services", "Meetings", "Merchandising", "Merge", "Merge data", "Messaging/Presence", "Microsoft 365", "Microsoft 365 Admin Center", "Microsoft 365 Defender", "Microsoft 365 Groups", "Microsoft Copilot For Azure", "Microsoft Copilot For Sales", "Microsoft Copilot for Service", "Microsoft Cost Management", "Microsoft Defender for Cloud", "Microsoft Dev Box", "Microsoft Discovery", "Microsoft Education", "Microsoft Fabric", "Microsoft Fabric - Data Engineering", "Microsoft Fabric - Data Factory", "Microsoft Fabric - Data Science", "Microsoft Fabric - Data Warehouse", "Microsoft Fabric - Databases", "Microsoft Fabric - IQ", "Microsoft Fabric - Power BI", "Microsoft Fabric - Real-Time Intelligence", "Microsoft Intune", "Microsoft Security Exposure Management (MSEM)", "Microsoft Store for Business", "Microsoft Teams integration", "Minecraft: Education Edition", "Mixed reality", "Mobile (Resco)", "Mobile (SMS and Push)", "Mobile Client (Android)", "Mobile Client (iOS)", "Mobile Experience (Power App)", "Mobile experiences", "Mobility", "Model Customization (Fine-Tuning)", "Model-Driven App Designer - Form designer", "Model-Driven Apps - Excel and word templates", "Model-Driven Apps - Excel data import / export", "Model-Driven Apps - Forms", "Model-Driven Apps - Guided help", "Model-Driven Apps - Theme", "Model-Driven Apps - View designer", "Model-Driven Apps - Views", "Model-Driven Controls", "Model-driven apps", "Models Ecosystem  (Azure Direct Models)", "Models Ecosystem  (MaaP)", "Module library page", "Monitor and analyze cash flow", "Monitor and analyze project performance", "Monitor customer credit and collections", "Monitoring & diagnostics", "Monitoring and analytics", "Monitoring and diagnostics", "NAT Gateway", "NGINX as a Service", "NRP", "NSG", "NVAs", "Native chat", "NetApp Files", "Network Function Manager (NFM)", "Network Optimized/Eb VMs", "Network Performance Monitor (NPM)", "Network Security Perimeter (NSP)", "Network Watcher", "Non-Dataverse connectors", "Notes analysis", "Notifications & alerting", "Notifications for windblade - clear all data", "Nutanix on Azure", "OCR RecognizeText", "ODAA", "ODATA", "OOB PBI Dashboards", "Object (Blobs)", "Object detection", "Observe", "Office integration", "Offline experiences", "Omnichannel bot integration", "Omnichannel commerce platform", "Omnichannel for Customer Service", "Omnichannel order management", "On-premises", "On-premises data gateway", "Onboard assets", "Onboard fixed assets", "Onboard new employees", "Onboarding", "OneDrive for Business", "OneDrive integration", "OneNote", "OneNote Class/Staff Notebook", "OneNote integration", "Operational UI", "Operational visibility", "Opportunity management", "Optimization & experimentation", "Oracle", "Orchestration", "Orchestration framework", "Order to cash", "Orderful", "Organisation settings", "Organization management", "Organize and assign product attributes and catalogs", "Outlook Mobile (iOS/Android)", "Outlook Universal", "Outlook experience", "Outlook for Mac", "Outlook for Mac (Legacy)", "Outlook for Windows", "Outlook for Windows (Legacy)", "Outlook on the Mobile Web", "Outlook on the Web", "Outsource production orders", "PBI Dashboard", "PBI Integration", "PIM", "PSA Sales", "Package deployer", "Password Protection", "Patient access", "Patient outreach", "Patient service center", "Pay employees", "Payment HSM", "Payroll integration", "PenTest", "Perform service work", "Performance", "Performance management", "Performance/scalability", "Personalization", "Personnel management", "Pipeline manager workspace", "Pipelines", "Places", "Plan and recruit your workforce", "Plan asset leases", "Plan capital assets", "Plan production operations", "Plan supply", "Plan to produce", "Planner", "Planning & optimization", "Planning optimization", "Platform", "Platform (extensibility)", "Platform and Devices - DPS", "Platform and Devices - Digital Twins", "Platform and Devices - Edge", "Platform and Devices - Hub", "Platform and product updates", "Playbooks", "Playbooks and Automation", "Plug-in registration tool", "Plug-ins", "Plugin checker test rule", "Portal - Azure Compute", "Portals", "Portals capacity", "Post go-live", "Power Apps CLI", "Power Apps Integration", "Power Apps component framework", "Power Apps/UI", "Power Automate Integration", "Power BI data model customization & extensibility", "Power BI integration", "Power BI visual customization", "Power BI visual personalization & bookmarks", "Power Fx", "Power Platform Admin Center", "Power Platform Admin Center - Home page", "Power Platform build tools", "Power Platform requests capacity", "Power Policy", "Power Query", "Power advisor", "PowerPoint", "PowerShell modules", "Prediction", "Predictions", "Predictive models (lead/opportunity scoring)", "Premium auto capture", "Preview program", "Pricing", "Pricing & licensing", "Privacy: general", "Private DNS resolver", "Private Link", "Private Marketplace", "Private endpoint", "ProDev tools", "Process advisor", "Process automation & career development", "Process inbound goods", "Process map", "Process outbound goods", "Process product recalls", "Process product return and exchanges", "Process project invoices", "Process vendor invoices", "Process vendor rebates and incentives", "Procure materials and services", "Procure to pay", "Procurement & sourcing", "Product and service lifecycle management", "Product information management", "Product management", "Product roadmap/release plans", "Production control / manufacturing", "Production operations", "Productivity tools", "Profile unification", "Project", "Project Planning & Management", "Project operations", "Project to profit", "Projects application lifecycle management", "Prometheus", "Prompt Flow", "Prospect to quote", "Provider", "Provider framework", "Public IP Addresses", "Public preview documentation", "Pulse", "Purchase protection", "Pursue opportunities", "Purview for AI", "QnA Maker", "Question Answering", "Questionnaire", "Queue report", "Queues", "Quotes, order & invoice management", "RAI Tools", "RBAC", "RDMI", "RDP RDS", "Rca communications for outages", "Reading Coach/Progress", "Real-time personalization", "Real-time store communication & collaboration", "Realtime analytics", "Rebates management", "Receipts processing", "Recognize project revenue", "Recommendations", "Record and control costs", "Record customer payments", "Record financial transactions", "Record time and attendance and manage leave and absence", "Record to report", "Records Management", "Redis Cache", "Reflect", "Region/Availability", "Regulatory configuration service", "Regulatory reporting", "Relationship Management Experience (RMex)", "Relationship analytics and health", "Relationship management", "Relationship selling with LinkedIn", "Relationships", "Release Cadence", "Release notes for updates", "Remote assist", "Rename to Defender for Open Source - relational Databases", "Reporting BI", "Reporting and analytics", "Reports", "Reserved Guaranteed Capacity", "Reserved Instance", "Resolve a case", "Resource Group", "Resource a project", "Resource scheduling optimization", "Retail banking data model", "Retail media", "Retail workforce management", "Retire and dispose of assets", "Review and close work orders", "Rooms and Devices", "Route Server", "Routing rules", "Run marketing campaigns", "S2D SOFS", "SAP - Azure Monitor for SAP Solution", "SAP - Deployment Automation", "SAP - Quality by Design", "SAP - SAP Workload Colocation", "SAP - Storage Strategy", "SAP HANA CLI", "SAP HANA on Azure", "SAP RISE", "SAP- Capacity", "SCOM Managed Instance", "SMB Security Storage Migration Service", "SMS", "SQL Azure Data Studio", "SQL DB", "SQL Managed Instance", "SQL Server", "SQL Server Reporting Services", "SQL Server enabled by Azure Arc", "SRE Agent", "Sales", "Sales & marketing", "Sales Insights", "Sales accelerator and sequence", "Sales business process", "Sales enablement (preview)", "Sales literature", "Sales overall experience and navigation", "Samples and guidance", "Satisfaction metrics", "Schedule board", "Schedule work orders", "Scheduling API", "Scheduling Insights (ML)", "School Connection", "School Data Sync", "Scorecards & goals", "Seamless customer service", "Search", "Search Coach", "Secure - Defender", "Secure - Entra", "Secure - Purview", "Security", "Security & compliance", "Security Center", "Security Copilot", "Security Copilot 3P plugins", "Security Copilot in Defender MTI", "Security Copilot in Defender XDR", "Security Copilot in Entra", "Security Copilot in Intune", "Security Copilot in MDC", "Security Copilot in Purview", "Security Copilot in Sentinel", "Security strategy", "Security: general", "Segmentation", "Segments", "Sensor Data Intelligence", "Sentiment analysis", "Sentinel - AGC", "Server-side synchronization", "Service Bus", "Service Endpoints", "Service Tags", "Service change communication", "Service communications", "Service incident communication", "Service level agreement", "Service management", "Service operations", "Service protection api limits", "Service scheduling", "Service to cash", "Services/Engage Hub", "Settings", "Settings and admin", "Setup", "Setup & admin", "Setup & upgrades", "SfB to Teams Upgrade", "SharePoint", "SharePoint Advanced Mgmt", "SharePoint Syntex", "SharePoint integration", "Shared image Gallery", "Sharing", "Sharing limits", "Shipstation", "Shopper and operations analytics", "SignalR", "Signup", "Silicon Microsoft Discovery", "Site Recovery", "Sitemap designer", "Skype for Business", "Skytap", "Smart News", "Social channels", "Solution blueprint", "Solution blueprint review output", "Solution checker", "Solution management", "Solution packager", "Solution performance", "Spark", "Speech", "Spot Instance", "Starter kits", "Static Web Apps", "Stock reorder recommendations", "Storage", "Stream", "Student Hub", "Subnet delegation", "Suite", "Summary report", "Supplier hub / vendor portal for windblade", "Supply & demand KPI dashboard", "Supply & demand dashboard - analytics documentation", "Supply & demand dashboard - analytics video", "Supply chain map", "Supply chain visibility", "Supply demand mismatch", "Surface", "Surface Hub", "Survey distribution options", "Survey form creation", "Sustainability", "Synapse link for dataverse", "Sync admin for FHIR", "Syntex Bulk Content Assembly", "Syntex Freeform Doc Processing", "Syntex Image Tagging", "Syntex OCR", "Syntex Prebuilt Document Processing", "Syntex Structured Doc Processing", "Syntex Summarization", "Syntex Taxonomy Tagging", "Syntex Translation", "Syntex Unstructured Doc Processing", "Syntex eSignature", "System Center Configuration Manager", "TAB", "TDS endpoint", "Tables", "Talking points", "Tax", "Teams", "Teams integration", "Teams meeting experience", "Teams/Channel", "Teams: Dynamics app in Teams", "Teams: Embedded channel integration (preview)", "Teams: Embedded chat experience (preview)", "Teams: Enhanced Teams integration", "Teams: Message actions in Teams (preview)", "Teams: Message extensions (preview)", "Templates", "Tenant isolation", "Territory management", "Test Studio", "Test strategy", "Text classification", "Text recognition", "Text translation", "Third party enrichments", "Threat Experts", "Threat protection Azure Storage Malware Reputation Screening", "Time & attendance", "Time Series Insights", "Time entries", "Timeline control", "To-Do", "Tone of guidance", "Topic clustering", "Topics", "Topics report", "Track production costs", "Trade across companies", "Trade allowance management", "Traffic Manager", "Training", "Translator", "Transportation management", "Trial deployment", "Types of questions", "Types of responses", "UCI Dashboard", "UDR", "Unfurling of records in Teams", "Unified Catalog", "Unified Service Desk", "Unified commerce", "Unified customer profile", "Unified interface transition", "Unified routing", "Unified routing report", "Universal resource\u00a0scheduling", "Update Management", "Uploading data", "User experience design", "VM", "VM Insights", "VM Networking and Performance", "VM SKU (General Compute)", "VM planned maintenance", "VMSS", "VNet Injection", "VPN Gateway", "VS Code", "VTAP", "Variables", "Vendor collaboration", "Video Analyzer", "Video Editor", "Video Indexer", "Virtual Agent for Customer Service", "Virtual Network Encryption", "Virtual Network Manager", "Virtual Network Scale", "Virtual Networks", "Virtual WAN", "Virtual tables", "Virtual visits", "Visio", "Visual Studio", "Visualizations (Workbooks & Grafana)", "Viva", "Viva Sales", "Voice report", "Volunteer management", "WAN", "WAN-Edge", "WB Shell", "Warehouse management", "Web API", "Web resources", "WebApps", "Whiteboard", "Who knows whom", "Windblade home page", "Windows 10", "Windows 11", "Windows 365", "Windows 365 Link", "Windows Company Portal", "Windows Information Protection", "Windows OS", "Windows Server", "Windows VM Marketplace Images", "Word", "Work on a case", "Workbooks", "Workflow extensions", "Workflows", "Workforce management (WFM)", "Workforce planning", "Workplace Analytics", "Yammer", "eDiscovery", "general Key Vault Secret Management"];
+    let currentConfig = {};
+    let areaPaths = [];
+
+    function renderAreaPaths() {
+        const container = document.getElementById('areaPathList');
+        container.innerHTML = areaPaths.map((p, i) => `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;padding:6px 10px;background:#f1f5f9;border-radius:8px;border:1px solid #e2e8f0;">
+                <span style="flex:1;font-size:0.84rem;font-family:monospace;">${p}</span>
+                <button onclick="removeAreaPath(${i})" style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0 4px;">✕</button>
+            </div>
+        `).join('');
+    }
+
+    function addAreaPath() {
+        const input = document.getElementById('areaPathNewInput');
+        const val = input.value.trim();
+        if (!val) return;
+        if (areaPaths.includes(val)) { input.value = ''; return; }
+        areaPaths.push(val);
+        input.value = '';
+        renderAreaPaths();
+        document.getElementById('saveBtn').disabled = false;
+        document.getElementById('saveStatus').textContent = '';
+    }
+
+    function removeAreaPath(idx) {
+        areaPaths.splice(idx, 1);
+        renderAreaPaths();
+        document.getElementById('saveBtn').disabled = false;
+        document.getElementById('saveStatus').textContent = '';
+    }
+
+    async function init() {
+        try {
+            const resp = await fetch('http://127.0.0.1:8765/admin_config');
+            currentConfig = await resp.json();
+        } catch(e) {
+            currentConfig = {};
+        }
+
+        // CRM Products (multi-select)
+        const select = document.getElementById('productSelect');
+        const selectedProducts = currentConfig.products || (currentConfig.productId ? [{id: currentConfig.productId, name: currentConfig.productName}] : []);
+        const selectedIds = selectedProducts.map(p => p.id);
+        CRM_PRODUCTS.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            if (selectedIds.includes(p.id)) opt.selected = true;
+            select.appendChild(opt);
+        });
+        document.getElementById('currentProduct').textContent = selectedProducts.map(p => p.name).join(', ') || 'Not set';
+
+        // Area Paths (multi-entry)
+        areaPaths = currentConfig.areaPaths || (currentConfig.areaPath ? [currentConfig.areaPath] : []);
+        renderAreaPaths();
+
+        // UAT Service Names (multi-select)
+        const uatSelect = document.getElementById('uatServiceSelect');
+        const selectedUats = currentConfig.uatServiceNames || (currentConfig.uatServiceName ? [currentConfig.uatServiceName] : []);
+        UAT_SERVICE_NAMES.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (selectedUats.includes(name)) opt.selected = true;
+            uatSelect.appendChild(opt);
+        });
+
+        select.addEventListener('change', () => {
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('saveStatus').textContent = '';
+        });
+        document.getElementById('areaPathNewInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addAreaPath(); }
+        });
+        uatSelect.addEventListener('change', () => {
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('saveStatus').textContent = '';
+        });
+    }
+
+    async function saveConfig() {
+        const select = document.getElementById('productSelect');
+        const products = Array.from(select.selectedOptions).map(o => ({ id: o.value, name: o.textContent }));
+        const uatSelect = document.getElementById('uatServiceSelect');
+        const uatServiceNames = Array.from(uatSelect.selectedOptions).map(o => o.value);
+
+        if (products.length === 0) { alert('Please select at least one CRM product.'); return; }
+
+        const btn = document.getElementById('saveBtn');
+        const status = document.getElementById('saveStatus');
+        btn.disabled = true;
+        btn.textContent = '⏳ Saving...';
+        status.textContent = '';
+
+        // Keep backward-compatible single fields for older code
+        const config = {
+            products,
+            productId: products[0].id,
+            productName: products[0].name,
+            areaPaths,
+            areaPath: areaPaths[0] || '',
+            uatServiceNames,
+            uatServiceName: uatServiceNames[0] || ''
+        };
+
+        try {
+            const resp = await fetch('http://127.0.0.1:8765/save_admin_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                currentConfig = config;
+                document.getElementById('currentProduct').textContent = products.map(p => p.name).join(', ');
+                btn.textContent = '💾 Save';
+                status.textContent = '✅ Saved! Starting full refresh...';
+                status.style.color = '#15803d';
+                startFullRefresh();
+            } else {
+                status.textContent = '❌ ' + (data.error || 'Save failed');
+                status.style.color = '#dc2626';
+                btn.disabled = false;
+                btn.textContent = '💾 Save';
+            }
+        } catch(e) {
+            status.textContent = '❌ Cannot connect to server. Is refresh_server.py running?';
+            status.style.color = '#dc2626';
+            btn.disabled = false;
+            btn.textContent = '💾 Save';
+        }
+    }
+
+    async function startFullRefresh() {
+        localStorage.setItem('purview_refresh', JSON.stringify({running: true, mode: 'full', startTime: Date.now(), page: 'Admin'}));
+        showRefreshBanner('full');
+        try {
+            const kickoff = await fetch('http://127.0.0.1:8765/refresh?mode=full');
+            const kickData = await kickoff.json();
+            if (!kickData.ok && !kickData.started) {
+                localStorage.removeItem('purview_refresh');
+                document.getElementById('refreshBanner').style.display = 'none';
+                alert('Failed to start refresh: ' + (kickData.error || ''));
+                return;
+            }
+            pollRefreshStatus();
+        } catch(e) {
+            localStorage.removeItem('purview_refresh');
+            document.getElementById('refreshBanner').style.display = 'none';
+            alert('Cannot connect to refresh server.');
+        }
+    }
+
+    function showRefreshBanner(mode) {
+        const banner = document.getElementById('refreshBanner');
+        const bannerText = document.getElementById('refreshBannerText');
+        const bannerTime = document.getElementById('refreshBannerTime');
+        const progressBar = document.getElementById('refreshProgressBar');
+        const progressPct = document.getElementById('refreshProgressPct');
+        const stepEl = document.getElementById('refreshStep');
+        const spinner = document.getElementById('refreshSpinner');
+        banner.style.display = 'flex';
+        banner.style.flexDirection = 'column';
+        banner.style.background = 'linear-gradient(135deg,#1d4ed8,#7c3aed)';
+        const modeLabel = mode === 'full' ? 'Full refresh with AI scoring' : 'Quick refresh';
+        bannerText.textContent = modeLabel + ' in progress...';
+        progressBar.style.width = '0%';
+        progressPct.textContent = '0%';
+        stepEl.textContent = '';
+        spinner.style.display = 'inline-block';
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || '{}');
+        const startTime = state.startTime || Date.now();
+        if (window._refreshTimer) clearInterval(window._refreshTimer);
+        window._refreshTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            bannerTime.textContent = mins > 0 ? `${mins}m ${secs}s elapsed` : `${secs}s elapsed`;
+        }, 1000);
+    }
+
+    async function pollRefreshStatus() {
+        const interval = 3000;
+        const poll = async () => {
+            try {
+                const r = await fetch('http://127.0.0.1:8765/result');
+                const d = await r.json();
+                if (d.running) {
+                    if (d.progress) {
+                        const pct = d.progress.pct || 0;
+                        document.getElementById('refreshProgressBar').style.width = pct + '%';
+                        document.getElementById('refreshProgressPct').textContent = pct + '%';
+                        if (d.progress.step) document.getElementById('refreshStep').textContent = d.progress.step;
+                    }
+                    setTimeout(poll, interval);
+                    return;
+                }
+                localStorage.removeItem('purview_refresh');
+                if (window._refreshTimer) clearInterval(window._refreshTimer);
+                const banner = document.getElementById('refreshBanner');
+                const spinner = document.getElementById('refreshSpinner');
+                if (d.ok) {
+                    banner.style.background = 'linear-gradient(135deg,#15803d,#16a34a)';
+                    document.getElementById('refreshBannerText').textContent = '✅ Refresh complete!';
+                    document.getElementById('refreshProgressBar').style.width = '100%';
+                    document.getElementById('refreshProgressPct').textContent = '100%';
+                    document.getElementById('refreshStep').textContent = 'All pages updated with new settings.';
+                    spinner.style.display = 'none';
+                    document.getElementById('saveBtn').disabled = false;
+                } else {
+                    banner.style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
+                    document.getElementById('refreshBannerText').textContent = '❌ Refresh failed';
+                    document.getElementById('refreshStep').textContent = d.error || 'Unknown error';
+                    spinner.style.display = 'none';
+                    document.getElementById('saveBtn').disabled = false;
+                }
+            } catch(e) { setTimeout(poll, interval); }
+        };
+        setTimeout(poll, interval);
+    }
+
+    // Stop refresh
+    async function stopRefresh() {
+        if (!confirm('Stop the current refresh?')) return;
+        try {
+            const r = await fetch('http://127.0.0.1:8765/stop');
+            const d = await r.json();
+            if (d.ok) {
+                localStorage.removeItem('purview_refresh');
+                if (window._refreshTimer) clearInterval(window._refreshTimer);
+                const banner = document.getElementById('refreshBanner');
+                banner.style.background = 'linear-gradient(135deg,#d97706,#b45309)';
+                document.getElementById('refreshBannerText').textContent = '⏹ Refresh stopped';
+                document.getElementById('refreshStep').textContent = 'Stopped by user';
+                document.getElementById('refreshSpinner').style.display = 'none';
+                document.getElementById('stopRefreshBtn').style.display = 'none';
+                document.getElementById('saveBtn').disabled = false;
+                setTimeout(() => { banner.style.display = 'none'; }, 3000);
+            }
+        } catch(e) { alert('Cannot connect to server.'); }
+    }
+
+    // On page load: check if refresh is in progress
+    window.addEventListener('DOMContentLoaded', function() {
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || 'null');
+        if (state && state.running) {
+            showRefreshBanner(state.mode);
+            pollRefreshStatus();
+        }
+    });
+
+    async function doRefresh() {
+        const state = JSON.parse(localStorage.getItem('purview_refresh') || 'null');
+        if (state && state.running) {
+            showRefreshBanner(state.mode || 'full');
+            pollRefreshStatus();
+            return;
+        }
+        try {
+            const r = await fetch('http://127.0.0.1:8765/result');
+            const d = await r.json();
+            if (d.running) {
+                localStorage.setItem('purview_refresh', JSON.stringify({running: true, mode: 'full', startTime: Date.now(), page: 'Admin'}));
+                showRefreshBanner('full');
+                pollRefreshStatus();
+                return;
+            }
+        } catch(e) {}
+        document.getElementById('refreshChoiceModal').style.display = 'flex';
+    }
+
+    function startRefresh(mode) {
+        document.getElementById('refreshChoiceModal').style.display = 'none';
+        if (mode === 'full') { startFullRefresh(); return; }
+        localStorage.setItem('purview_refresh', JSON.stringify({running: true, mode, startTime: Date.now(), page: 'Admin'}));
+        showRefreshBanner(mode);
+        fetch('http://127.0.0.1:8765/refresh?mode=' + mode).then(r => r.json()).then(d => {
+            if (!d.ok && !d.started) {
+                localStorage.removeItem('purview_refresh');
+                document.getElementById('refreshBanner').style.display = 'none';
+                alert('Failed: ' + (d.error || ''));
+                return;
+            }
+            pollRefreshStatus();
+        }).catch(e => {
+            localStorage.removeItem('purview_refresh');
+            document.getElementById('refreshBanner').style.display = 'none';
+            alert('Cannot connect to refresh server.');
+        });
+    }
+
+    init();
+    </script>
+    <div id="refreshChoiceModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:2002;justify-content:center;align-items:center;">
+        <div style="background:white;border-radius:16px;padding:2rem;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h3 style="margin:0 0 0.75rem;font-size:1.1rem;">🔄 Refresh Data</h3>
+            <p style="font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;">Choose refresh mode:</p>
+            <button onclick="startRefresh('fast')" style="width:100%;padding:0.75rem;margin-bottom:0.5rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;cursor:pointer;font-size:0.85rem;font-weight:600;">⚡ Quick Refresh<br><span style="font-weight:400;font-size:0.78rem;color:#64748b;">Pull latest data only</span></button>
+            <button onclick="startRefresh('full')" style="width:100%;padding:0.75rem;margin-bottom:0.5rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;cursor:pointer;font-size:0.85rem;font-weight:600;">🧠 Full Refresh<br><span style="font-weight:400;font-size:0.78rem;color:#64748b;">Re-score with AI</span></button>
+            <button onclick="document.getElementById('refreshChoiceModal').style.display='none'" style="width:100%;padding:0.6rem;border:none;background:transparent;cursor:pointer;font-size:0.82rem;color:#64748b;">Cancel</button>
+        </div>
+    </div>
+</body>
+</html>
