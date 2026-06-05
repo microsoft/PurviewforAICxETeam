@@ -20,6 +20,34 @@ Dashboard and automation tooling for **Purview for AI** feature intake across:
    - `openpyxl`
    - `requests`
 
+## Install
+
+### Mac
+
+```bash
+git clone <repo-url>
+cd FeatureRequests
+python3 -m venv .venv
+source .venv/bin/activate
+pip install openpyxl requests
+```
+
+### Windows
+
+```powershell
+git clone <repo-url>
+cd FeatureRequests
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install openpyxl requests
+```
+
+If you prefer not to use a virtual environment, install the packages into your current Python environment instead:
+
+```bash
+pip install openpyxl requests
+```
+
 ## Authentication
 
 Most scripts use Azure CLI tokens:
