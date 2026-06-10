@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}History · Agent SDK Onboarder{% endblock %}
+{% block content %}
+<div class="intro">
+  <h2>Previously onboarded agents</h2>
+  <p>Reads <code>generated/&lt;slug&gt;/_onboarding-report.json</code> for every
+     folder under <code>{{ generated_root }}</code>. Newest first.</p>
+  <p>
+    <a href="{{ url_for('index') }}">← Back to onboarder</a>
+  </p>
+</div>
+
+{% if not rows %}
+  <section class="card">
+    <div class="muted">No onboarded agents yet. Once you finish a run, it
+       shows up here automatically.</div>
+  </section>
+{% else %}
+  <section class="card">
+    <h3><span class="num">📜</span> {{ rows|length }} agent{{ '' if rows|length == 1 else 's' }}</h3>
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Display name</th>
+          <th>Slug</th>
+          <th>Provider</th>
+          <th>Acting as</th>
+          <th>Tenant</th>
+          <th>Entra app</th>
+          <th>Created (UTC)</th>
+          <th>Agent</th>
+          <th>Folder</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr data-slug="{{ row.slug }}">
+          <td>
+            {% if row.ok %}
+              <span class="status-pill succeeded" title="all steps succeeded">✓</span>
+            {% elif row.error %}
+              <span class="status-pill failed" title="report unavailable">!</span>
+            {% else %}
+              <span class="status-pill failed" title="one or more steps failed">✗</span>
+            {% endif %}
+            <strong>{{ row.display_name }}</strong>
+          </td>
+          <td><code>{{ row.slug }}</code></td>
+          <td>{{ row.provider or '—' }}</td>
+          <td><code>{{ row.acting_as_upn or '—' }}</code></td>
+          <td>
+            {% if row.tenant_domain %}{{ row.tenant_domain }}<br>{% endif %}
+            <code class="muted" style="font-size:12px">{{ row.tenant_id or '—' }}</code>
+          </td>
+          <td>
+            {% if row.app_id %}
+              <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/{{ row.app_id }}"
+                 target="_blank" rel="noopener" title="Open in Azure portal">
+                <code style="font-size:12px">{{ row.app_id[:8] }}…</code>
+              </a>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td><span class="muted" style="font-size:12px">{{ row.generated_at or '—' }}</span></td>
+          <td class="launch-cell" style="white-space:nowrap">
+            {% if row.slug and not row.error %}
+              <span class="launch-status">
+                {% if row.running %}
+                  <span class="status-pill succeeded" title="pid {{ row.pid }}">● running</span>
+                {% else %}
+                  <span class="muted" style="font-size:12px">stopped</span>
+                {% endif %}
+              </span>
+              <div style="margin-top:4px">
+                <button type="button" class="js-launch" data-slug="{{ row.slug }}"
+                  style="padding:3px 8px;font-size:11px;background:#16a34a;color:#fff;border:0;border-radius:4px;cursor:pointer;{% if row.running %}display:none;{% endif %}">🚀 Launch</button>
+                <button type="button" class="js-stop" data-slug="{{ row.slug }}"
+                  style="padding:3px 8px;font-size:11px;background:#dc2626;color:#fff;border:0;border-radius:4px;cursor:pointer;{% if not row.running %}display:none;{% endif %}">■ Stop</button>
+                <a class="js-open" href="{{ row.url or '#' }}" target="_blank" rel="noopener"
+                  style="padding:3px 8px;font-size:11px;background:#0078d4;color:#fff;border-radius:4px;text-decoration:none;{% if not row.running %}display:none;{% endif %}">↗ Open</a>
+              </div>
+              <div class="js-loglink" style="margin-top:4px;{% if not row.running %}display:none;{% endif %}">
+                <a href="#" class="js-toggle-log" style="font-size:11px">show launch log</a>
+              </div>
+              <pre class="js-log log" style="display:none;max-height:160px;overflow:auto;font-size:11px;margin-top:4px"></pre>
+            {% else %}
+              <span class="muted" style="font-size:12px">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <button type="button" class="primary" style="padding:4px 10px;font-size:12px;background:#0078d4;color:#fff;border:0;border-radius:4px;cursor:pointer"
+                    data-folder="{{ row.folder }}"
+                    onclick="openFolder(this)"
+                    title="Open this folder in the OS file browser">📂 Open</button>
+            <button type="button" class="primary" style="padding:4px 10px;font-size:12px;background:#475569"
+                    data-folder="{{ row.folder }}"
+                    onclick="copyFolder(this)">📋 Copy path</button>
+            {% if row.error %}
+              <div class="muted" style="color:#991b1b;margin-top:4px;font-size:12px">{{ row.error }}</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h3><span class="num">!</span> Notes</h3>
+    <ul class="help" style="margin:0;padding-left:20px">
+      <li>Re-running the onboarder with the <strong>same slug</strong> is
+          rejected unless you tick <em>Overwrite previous run</em>; the existing
+          folder is moved to <code>&lt;slug&gt;.archived-&lt;timestamp&gt;/</code>
+          before re-generation.</li>
+      <li>Deleting a row here would only remove the local folder — the Entra
+          app registration in your tenant would still exist. To clean up:
+          <code>az ad app delete --id &lt;app-id&gt;</code>.</li>
+      <li>Folders without <code>_onboarding-report.json</code> are
+          pre-v1.3 runs or manually-created folders; they're listed for
+          visibility but not all columns are populated.</li>
+    </ul>
+  </section>
+{% endif %}
+
+<script>
+function copyFolder(btn){
+  var path = btn.dataset.folder || '';
+  navigator.clipboard.writeText(path).then(function(){
+    var orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(function(){ btn.textContent = orig; }, 1200);
+  }).catch(function(){
+    window.prompt('Copy the folder path:', path);
+  });
+}
+
+function openFolder(btn){
+  var path = btn.dataset.folder || '';
+  if (!path) return;
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '… opening';
+  fetch({{ url_for('open_folder_api')|tojson }}, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      {{ csrf_header|tojson }}: {{ csrf_token|tojson }}
+    },
+    body: JSON.stringify({folder: path})
+  }).then(function(r){ return r.json().then(function(j){ return {status: r.status, body: j}; }); })
+    .then(function(res){
+      if (res.status === 200 && res.body.ok) {
+        btn.textContent = '✓ Opened';
+        setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1200);
+      } else {
+        btn.textContent = '✗ Failed';
+        setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 2000);
+        alert("Couldn't open folder:\n" + (res.body.error || ('HTTP ' + res.status)));
+      }
+    })
+    .catch(function(err){
+      btn.textContent = '✗ Failed';
+      setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 2000);
+      alert("Network error opening folder:\n" + err);
+    });
+}
+
+(function(){
+  var CSRF_HEADER = {{ csrf_header|tojson }};
+  var CSRF_TOKEN  = {{ csrf_token|tojson }};
+  var URL_LAUNCH  = {{ url_for('agent_launch')|tojson }};
+  var URL_STATUS  = {{ url_for('agent_status')|tojson }};
+  var URL_STOP    = {{ url_for('agent_stop')|tojson }};
+  var URL_STREAM_TMPL = {{ url_for('agent_launch_stream', slug='__SLUG__')|tojson }};
+
+  function rowFor(slug){ return document.querySelector('tr[data-slug="' + slug + '"]'); }
+
+  function setRowState(slug, state){
+    var row = rowFor(slug); if (!row) return;
+    var btnL = row.querySelector('.js-launch');
+    var btnS = row.querySelector('.js-stop');
+    var aOpen = row.querySelector('.js-open');
+    var statusSpan = row.querySelector('.launch-status');
+    var logLink = row.querySelector('.js-loglink');
+    if (state.running) {
+      btnL.style.display = 'none';
+      btnS.style.display = 'inline-block';
+      aOpen.style.display = 'inline-block';
+      aOpen.href = state.url;
+      if (statusSpan) statusSpan.innerHTML = '<span class="status-pill succeeded" title="pid ' + state.pid + '">● running</span>';
+      if (logLink) logLink.style.display = 'block';
+    } else {
+      btnL.style.display = 'inline-block';
+      btnS.style.display = 'none';
+      aOpen.style.display = 'none';
+      if (statusSpan) statusSpan.innerHTML = '<span class="muted" style="font-size:12px">stopped</span>';
+    }
+  }
+
+  function appendLog(slug, line){
+    var row = rowFor(slug); if (!row) return;
+    var logEl = row.querySelector('.js-log');
+    var logLink = row.querySelector('.js-loglink');
+    if (logEl) {
+      logEl.style.display = 'block';
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    if (logLink) logLink.style.display = 'block';
+    updateRowPhase(slug, line);
+  }
+
+  // Map streamed pip / uvicorn log lines to phase labels for the row's
+  // progress indicator. Mirrors result.html's updateLaunchPhase().
+  function updateRowPhase(slug, line){
+    var row = rowFor(slug); if (!row) return;
+    var phaseEl = row.querySelector('.js-launch-phase');
+    if (!phaseEl || !line) return;
+    var s = String(line);
+    var newLabel = null;
+    if (/Uvicorn running|Application startup|listening on|Running on http/.test(s)) {
+      newLabel = 'Starting agent\u2026';
+    } else if (/Successfully installed/.test(s)) {
+      newLabel = 'Starting agent\u2026';
+    } else if (/Installing collected packages/.test(s)) {
+      newLabel = 'Installing\u2026';
+    } else if (/^\s*(Collecting|Downloading|Using cached)\b/.test(s)) {
+      newLabel = 'Downloading deps\u2026';
+    } else if (/python -m venv|Creating virtual|venv\\Scripts|venv\/bin/.test(s)) {
+      newLabel = 'Creating venv\u2026';
+    }
+    if (newLabel && phaseEl.dataset.label !== newLabel) {
+      phaseEl.dataset.label = newLabel;
+      phaseEl.textContent = newLabel;
+    }
+  }
+  function showRowProgress(slug, initialLabel){
+    var row = rowFor(slug); if (!row) return;
+    var statusSpan = row.querySelector('.launch-status');
+    if (!statusSpan) return;
+    statusSpan.innerHTML =
+      '<div class="progress-shell" style="margin:0">' +
+        '<div class="phase-label js-launch-phase" data-label="' + initialLabel + '" ' +
+             'style="font-size:11px;margin-bottom:3px">' + initialLabel + '</div>' +
+        '<div class="progress-indeterminate" style="height:2px"></div>' +
+      '</div>';
+  }
+
+  document.querySelectorAll('.js-launch').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var slug = btn.dataset.slug;
+      btn.disabled = true;
+      var row = rowFor(slug);
+      var logEl = row.querySelector('.js-log');
+      if (logEl) { logEl.textContent = ''; logEl.style.display = 'block'; }
+      showRowProgress(slug, 'Starting\u2026');
+
+      fetch(URL_LAUNCH, {
+        method:'POST',
+        headers:{'Content-Type':'application/json', [CSRF_HEADER]: CSRF_TOKEN},
+        body: JSON.stringify({slug: slug})
+      }).then(function(r){ return r.json().then(function(j){ return {status:r.status, body:j}; }); })
+        .then(function(res){
+          if (res.status !== 200) {
+            appendLog(slug, '[ERROR] ' + (res.body.error || JSON.stringify(res.body)));
+            btn.disabled = false;
+            return;
+          }
+          if (res.body.status === 'already_running') {
+            appendLog(slug, '[INFO] Already running, pid=' + res.body.pid);
+            setRowState(slug, {running:true, pid:res.body.pid, url:res.body.url});
+            btn.disabled = false;
+            return;
+          }
+          var streamUrl = URL_STREAM_TMPL.replace('__SLUG__', encodeURIComponent(slug));
+          var es = new EventSource(streamUrl);
+          es.onmessage = function(ev){
+            try {
+              var d = JSON.parse(ev.data);
+              if (d.line && d.line !== '[END]') appendLog(slug, d.line);
+              if (d.done) {
+                es.close();
+                btn.disabled = false;
+                if (d.status === 'running') {
+                  fetch(URL_STATUS + '?slug=' + encodeURIComponent(slug))
+                    .then(function(r){return r.json();}).then(function(s){ setRowState(slug, s); });
+                } else {
+                  appendLog(slug, '[STATUS] ' + d.status);
+                }
+              }
+            } catch(e){}
+          };
+          es.onerror = function(){ es.close(); btn.disabled = false; };
+        })
+        .catch(function(err){ appendLog(slug, '[ERROR] ' + err); btn.disabled = false; });
+    });
+  });
+
+  document.querySelectorAll('.js-stop').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var slug = btn.dataset.slug;
+      if (!confirm('Stop "' + slug + '"?')) return;
+      btn.disabled = true;
+      fetch(URL_STOP, {
+        method:'POST',
+        headers:{'Content-Type':'application/json', [CSRF_HEADER]: CSRF_TOKEN},
+        body: JSON.stringify({slug: slug})
+      }).then(function(r){ return r.json(); })
+        .then(function(j){
+          btn.disabled = false;
+          if (j.ok) {
+            appendLog(slug, '[INFO] Stopped pid=' + j.pid);
+            setRowState(slug, {running:false});
+          } else {
+            appendLog(slug, '[ERROR] stop failed: ' + (j.error || ''));
+          }
+        })
+        .catch(function(){ btn.disabled = false; });
+    });
+  });
+
+  document.querySelectorAll('.js-toggle-log').forEach(function(a){
+    a.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var row = a.closest('tr');
+      var logEl = row.querySelector('.js-log');
+      if (!logEl) return;
+      if (logEl.style.display === 'none') {
+        logEl.style.display = 'block';
+        a.textContent = 'hide launch log';
+      } else {
+        logEl.style.display = 'none';
+        a.textContent = 'show launch log';
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

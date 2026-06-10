@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Result · {{ cfg.agent_display_name }}{% endblock %}
+{% block content %}
+
+{% set ok = result.get('ok') %}
+{% set out_dir = result.get('out_dir', '') %}
+{% set app_id = result.get('app_id') %}
+{% set sp_object_id = result.get('sp_object_id') %}
+{% set steps = result.get('steps') or [] %}
+
+<section class="card">
+  <h3>
+    {% if ok %}<span class="num" style="background:#16a34a">✓</span>{% else %}<span class="num" style="background:#dc2626">!</span>{% endif %}
+    {{ cfg.agent_display_name }}
+    <span class="status-pill {{ 'succeeded' if ok else 'failed' }}">{{ run.status }}</span>
+  </h3>
+
+  {% if ok %}
+    <div class="alert ok">
+      🎉 Onboarding finished. Your agent is wrapped, registered, and ready to run.
+    </div>
+  {% else %}
+    <div class="alert err">
+      ❌ Onboarding stopped before finishing. See log for details:
+      <a href="{{ url_for('progress_page', run_id=run_id) }}">view full log</a>.
+      {% if result.error %}<div style="margin-top:6px"><code>{{ result.error }}</code></div>{% endif %}
+    </div>
+  {% endif %}
+
+  <table class="result-table">
+    <tr><th>Run ID</th><td><code>{{ run_id }}</code></td></tr>
+    <tr><th>Output folder</th><td>
+      <code id="outDirCode">{{ out_dir }}</code>
+      <button type="button" data-folder="{{ out_dir }}" onclick="openOutDir(this)"
+              title="Open this folder in your file browser"
+              style="margin-left:8px;padding:3px 9px;font-size:12px;background:#0078d4;color:#fff;border:0;border-radius:4px;cursor:pointer">📂 Open</button>
+      <button type="button" data-folder="{{ out_dir }}" onclick="copyOutDir(this)"
+              style="margin-left:4px;padding:3px 9px;font-size:12px;background:#475569;color:#fff;border:0;border-radius:4px;cursor:pointer">📋 Copy path</button>
+    </td></tr>
+    {% if app_id %}<tr><th>Entra app (client) ID</th><td><code>{{ app_id }}</code></td></tr>{% endif %}
+    {% if sp_object_id %}<tr><th>Service principal object ID</th><td><code>{{ sp_object_id }}</code></td></tr>{% endif %}
+    <tr><th>Tenant</th><td><code>{{ cfg.tenant_id }}</code></td></tr>
+    <tr><th>Provider</th><td>{{ cfg.provider }}</td></tr>
+    <tr><th>Slug</th><td><code>{{ cfg.agent_slug }}</code></td></tr>
+  </table>
+</section>
+
+{% if ok %}
+<section class="card" id="launchCard">
+  <h3><span class="num">🚀</span> Launch this agent</h3>
+  <p class="muted" style="margin-top:-4px">
+    One click: creates the virtual env, installs dependencies, and starts the agent on
+    <code>http://{{ cfg.server.host }}:{{ cfg.server.port }}/</code>. The agent runs in a
+    detached process and survives onboarder restarts. No PowerShell required.
+  </p>
+  <div class="actions" style="margin-top:8px">
+    <button id="launchBtn" type="button" class="primary"
+            style="padding:10px 18px; background:#16a34a; color:#fff; border:0; border-radius:6px; cursor:pointer; font-weight:600">
+      🚀 Launch agent
+    </button>
+    <button id="stopBtn" type="button"
+            style="padding:10px 18px; background:#dc2626; color:#fff; border:0; border-radius:6px; cursor:pointer; display:none">
+      ■ Stop agent
+    </button>
+    <a id="openBtn" href="http://{{ cfg.server.host }}:{{ cfg.server.port }}/" target="_blank" rel="noopener"
+       style="padding:10px 18px; background:#0078d4; color:#fff; border-radius:6px; text-decoration:none; display:none">
+      ↗ Open chat UI
+    </a>
+    <span id="launchStatus" class="muted" style="margin-left:10px"></span>
+  </div>
+  <div id="launchProgress" class="progress-shell" style="display:none; margin-top:14px">
+    <div class="phase-label" id="launchPhaseLabel">Starting&hellip;</div>
+    <div class="progress-indeterminate"></div>
+  </div>
+  <div id="launchLog" class="log" style="display:none; margin-top:10px; max-height:340px; overflow:auto"></div>
+</section>
+
+<section class="card">
+  <h3><span class="num">▶</span> Run your new agent (manual fallback)</h3>
+  <details>
+    <summary style="cursor:pointer; padding:6px 0">
+      Prefer to run it yourself? Click to expand the PowerShell instructions.
+    </summary>
+    <div style="margin-top:12px">
+    <p><strong>One-time setup</strong> (creates a virtual env + installs dependencies):</p>
+    <div class="snippet">
+      <button type="button" class="copy-btn" data-copy="setup">📋 Copy</button>
+<code id="snippet-setup">cd "{{ out_dir }}"
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt</code>
+    </div>
+
+    <p style="margin-top:14px"><strong>Start the agent</strong> (re-run this whenever you want to bring it back up):</p>
+    <div class="snippet">
+      <button type="button" class="copy-btn" data-copy="run">📋 Copy</button>
+<code id="snippet-run">cd "{{ out_dir }}"
+.venv\Scripts\activate
+python -m uvicorn server:app --host {{ cfg.server.host }} --port {{ cfg.server.port }}</code>
+    </div>
+
+    <p style="margin-top:10px">Then open
+      <a href="http://{{ cfg.server.host }}:{{ cfg.server.port }}/" target="_blank" rel="noopener">
+        http://{{ cfg.server.host }}:{{ cfg.server.port }}/
+      </a>
+      and sign in.</p>
+    </div>
+  </details>
+</section>
+
+<section class="card">
+  <h3><span class="num">🔎</span> Verify in the Microsoft portals</h3>
+  <ol class="next-list">
+    <li>
+      <strong>Entra ID</strong> (your new app + secret):
+      <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/{{ app_id }}"
+         target="_blank" rel="noopener">Open app registration →</a>
+    </li>
+    <li>
+      <strong>Purview portal → Solutions → DSPM for AI</strong>:
+      <a href="https://purview.microsoft.com/datasecurity/dspmforai/overview" target="_blank" rel="noopener">
+        DSPM for AI overview
+      </a> — your agent appears under <em>AI apps</em> ~10 min after the first chat turn.
+    </li>
+    <li>
+      <strong>Purview compliance portal → Audit</strong>:
+      <a href="https://compliance.microsoft.com/auditlogsearch" target="_blank" rel="noopener">
+        Search the unified audit log
+      </a> for <code>{{ cfg.agent_display_name }}</code>.
+    </li>
+    {% if cfg.monitoring.a365_blueprint %}
+    <li>
+      <strong>Microsoft 365 admin center → Agents</strong>:
+      <a href="https://admin.microsoft.com/#/agents" target="_blank" rel="noopener">
+        Open Agents list
+      </a> — should show <code>{{ cfg.agent_slug }}</code>.
+    </li>
+    {% endif %}
+  </ol>
+</section>
+{% endif %}
+
+<section class="card">
+  <h3><span class="num">⚙</span> Step-by-step results</h3>
+  <table class="result-table">
+    <tr><th>Step</th><th>Status</th><th>Notes</th></tr>
+    {% for s in steps %}
+      <tr>
+        <td><code>{{ s.name }}</code></td>
+        <td>
+          {% if s.ok %}<span class="status-pill succeeded">ok</span>
+          {% else %}<span class="status-pill failed">failed</span>{% endif %}
+        </td>
+        <td>
+          {% if s.error %}<code>{{ s.error }}</code>
+          {% elif s.detail and s.detail.get('skipped') %}skipped
+          {% elif s.detail %}
+            {% for k, v in s.detail.items() %}
+              {% if k != 'client_secret' %}
+                <div><span class="muted">{{ k }}:</span>
+                  <code>{{ v if v|string|length < 80 else (v|string)[:77] ~ '…' }}</code></div>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="card">
+  <h3><span class="num">📚</span> Helpful links</h3>
+  <ul class="next-list">
+    <li><a href="https://learn.microsoft.com/purview/dspm-for-ai" target="_blank" rel="noopener">Microsoft Learn — DSPM for AI</a></li>
+    <li><a href="https://learn.microsoft.com/microsoft-agent-365/developer/get-started" target="_blank" rel="noopener">Microsoft Learn — Agent 365 SDK</a></li>
+    <li><a href="https://learn.microsoft.com/microsoft-agent-365/developer/agent-365-cli" target="_blank" rel="noopener">Microsoft Learn — Agent 365 CLI</a></li>
+    <li><a href="https://learn.microsoft.com/graph/api/resources/security-aiinteractions" target="_blank" rel="noopener">Graph — Purview AI interactions</a></li>
+  </ul>
+</section>
+
+<div class="actions">
+  <a href="{{ url_for('history_page') }}" class="primary" style="text-decoration:none; padding:10px 20px; background:#475569; color:#fff; border-radius:6px">
+    📜 View all onboarded agents
+  </a>
+  <a href="{{ url_for('index') }}" class="primary" style="text-decoration:none; padding:10px 20px; background:#0078d4; color:#fff; border-radius:6px">
+    ＋ Onboard another agent
+  </a>
+</div>
+
+<script>
+document.querySelectorAll('.snippet .copy-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var key = btn.dataset.copy;
+    var src = document.getElementById('snippet-' + key);
+    if (!src) return;
+    navigator.clipboard.writeText(src.textContent).then(function(){
+      var orig = btn.textContent;
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(function(){
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1400);
+    }).catch(function(){
+      window.prompt('Copy the commands:', src.textContent);
+    });
+  });
+});
+
+function copyOutDir(btn){
+  var path = btn.dataset.folder || '';
+  navigator.clipboard.writeText(path).then(function(){
+    var orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(function(){ btn.textContent = orig; }, 1200);
+  }).catch(function(){
+    window.prompt('Copy the folder path:', path);
+  });
+}
+function openOutDir(btn){
+  var path = btn.dataset.folder || '';
+  if (!path) return;
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '… opening';
+  fetch({{ url_for('open_folder_api')|tojson }}, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      {{ csrf_header|tojson }}: {{ csrf_token|tojson }}
+    },
+    body: JSON.stringify({folder: path})
+  }).then(function(r){ return r.json().then(function(j){ return {status: r.status, body: j}; }); })
+    .then(function(res){
+      if (res.status === 200 && res.body.ok) {
+        btn.textContent = '✓ Opened';
+        setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1200);
+      } else {
+        btn.textContent = '✗ Failed';
+        setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 2000);
+        alert("Couldn't open folder:\n" + (res.body.error || ('HTTP ' + res.status)));
+      }
+    })
+    .catch(function(err){
+      btn.textContent = '✗ Failed';
+      setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 2000);
+      alert("Network error opening folder:\n" + err);
+    });
+}
+
+(function(){
+  var CSRF_HEADER = {{ csrf_header|tojson }};
+  var CSRF_TOKEN  = {{ csrf_token|tojson }};
+  var SLUG        = {{ cfg.agent_slug|tojson }};
+  var URL_LAUNCH  = {{ url_for('agent_launch')|tojson }};
+  var URL_STATUS  = {{ url_for('agent_status')|tojson }};
+  var URL_STOP    = {{ url_for('agent_stop')|tojson }};
+  var URL_STREAM_TMPL = {{ url_for('agent_launch_stream', slug='__SLUG__')|tojson }};
+
+  var btnLaunch = document.getElementById('launchBtn');
+  var btnStop   = document.getElementById('stopBtn');
+  var btnOpen   = document.getElementById('openBtn');
+  var logEl     = document.getElementById('launchLog');
+  var statusEl  = document.getElementById('launchStatus');
+  var progEl    = document.getElementById('launchProgress');
+  var phaseEl   = document.getElementById('launchPhaseLabel');
+  if (!btnLaunch) return;
+
+  // Detect well-known phases from streamed pip / uvicorn log lines so the
+  // phase label tracks roughly what the user is waiting on. Order-sensitive:
+  // later checks (e.g. "Successfully installed") imply earlier ones are done.
+  function updateLaunchPhase(line){
+    if (!phaseEl || !line) return;
+    var s = String(line);
+    var newLabel = null;
+    if (/Uvicorn running|Application startup|listening on|Running on http/.test(s)) {
+      newLabel = 'Almost ready \u2014 starting agent server\u2026';
+    } else if (/Successfully installed/.test(s)) {
+      newLabel = 'Starting agent server\u2026';
+    } else if (/Installing collected packages/.test(s)) {
+      newLabel = 'Installing dependencies\u2026';
+    } else if (/^\s*(Collecting|Downloading|Using cached)\b/.test(s)) {
+      newLabel = 'Downloading dependencies\u2026';
+    } else if (/python -m venv|Creating virtual|venv\\Scripts|venv\/bin/.test(s)) {
+      newLabel = 'Creating virtual environment\u2026';
+    }
+    if (newLabel && phaseEl.dataset.label !== newLabel) {
+      phaseEl.dataset.label = newLabel;
+      phaseEl.innerHTML = newLabel;
+    }
+  }
+  function showLaunchProgress(initialLabel){
+    if (!progEl) return;
+    phaseEl.dataset.label = initialLabel;
+    phaseEl.innerHTML = initialLabel;
+    progEl.style.display = 'block';
+  }
+  function hideLaunchProgress(){
+    if (progEl) progEl.style.display = 'none';
+  }
+
+  function setRunning(state){
+    if (state.running) {
+      btnLaunch.style.display = 'none';
+      btnStop.style.display = 'inline-block';
+      btnOpen.style.display = 'inline-block';
+      btnOpen.href = state.url;
+      statusEl.textContent = '● running (pid ' + state.pid + ')';
+      statusEl.style.color = '#16a34a';
+      hideLaunchProgress();
+    } else {
+      btnLaunch.style.display = 'inline-block';
+      btnStop.style.display = 'none';
+      btnOpen.style.display = 'none';
+      statusEl.textContent = '';
+      hideLaunchProgress();
+    }
+  }
+
+  function appendLog(line){
+    logEl.style.display = 'block';
+    var p = document.createElement('div');
+    p.textContent = line;
+    logEl.appendChild(p);
+    logEl.scrollTop = logEl.scrollHeight;
+    updateLaunchPhase(line);
+  }
+
+  fetch(URL_STATUS + '?slug=' + encodeURIComponent(SLUG))
+    .then(function(r){ return r.json(); })
+    .then(setRunning)
+    .catch(function(){});
+
+  btnLaunch.addEventListener('click', function(){
+    btnLaunch.disabled = true;
+    statusEl.textContent = 'starting…';
+    statusEl.style.color = '#a16207';
+    logEl.innerHTML = '';
+    logEl.style.display = 'block';
+    showLaunchProgress('Preparing\u2026');
+
+    fetch(URL_LAUNCH, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', [CSRF_HEADER]: CSRF_TOKEN},
+      body: JSON.stringify({slug: SLUG})
+    }).then(function(r){ return r.json().then(function(j){ return {status:r.status, body:j}; }); })
+      .then(function(res){
+        if (res.status !== 200) {
+          appendLog('[ERROR] ' + (res.body.error || JSON.stringify(res.body)));
+          btnLaunch.disabled = false;
+          statusEl.textContent = 'failed';
+          statusEl.style.color = '#dc2626';
+          hideLaunchProgress();
+          return;
+        }
+        if (res.body.status === 'already_running') {
+          appendLog('[INFO] Agent was already running, pid=' + res.body.pid);
+          setRunning({running:true, pid:res.body.pid, url:res.body.url});
+          btnLaunch.disabled = false;
+          return;
+        }
+        var streamUrl = URL_STREAM_TMPL.replace('__SLUG__', encodeURIComponent(SLUG));
+        var es = new EventSource(streamUrl);
+        es.onmessage = function(ev){
+          try {
+            var d = JSON.parse(ev.data);
+            if (d.line && d.line !== '[END]') appendLog(d.line);
+            if (d.done) {
+              es.close();
+              btnLaunch.disabled = false;
+              if (d.status === 'running') {
+                fetch(URL_STATUS + '?slug=' + encodeURIComponent(SLUG))
+                  .then(function(r){return r.json();}).then(setRunning);
+              } else {
+                statusEl.textContent = d.status || 'failed';
+                statusEl.style.color = '#dc2626';
+                hideLaunchProgress();
+              }
+            }
+          } catch(e){}
+        };
+        es.onerror = function(){ es.close(); btnLaunch.disabled = false; hideLaunchProgress(); };
+      })
+      .catch(function(err){
+        appendLog('[ERROR] network: ' + err);
+        btnLaunch.disabled = false;
+        hideLaunchProgress();
+      });
+  });
+
+  btnStop.addEventListener('click', function(){
+    if (!confirm('Stop the agent process?')) return;
+    btnStop.disabled = true;
+    fetch(URL_STOP, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', [CSRF_HEADER]: CSRF_TOKEN},
+      body: JSON.stringify({slug: SLUG})
+    }).then(function(r){ return r.json(); })
+      .then(function(j){
+        btnStop.disabled = false;
+        if (j.ok) {
+          appendLog('[INFO] Stopped pid=' + j.pid);
+          setRunning({running:false});
+        } else {
+          appendLog('[ERROR] stop failed: ' + (j.error || ''));
+        }
+      })
+      .catch(function(){ btnStop.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

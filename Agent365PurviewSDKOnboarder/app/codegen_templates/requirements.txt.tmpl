@@ -1,0 +1,27 @@
+# Core wrapper
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+python-dotenv>=1.0,<2.0
+itsdangerous>=2.1,<3.0
+starlette>=0.36,<1.0
+
+# Microsoft identity + Purview API calls
+msal>=1.26,<2.0
+requests>=2.31,<3.0
+
+# Azure Key Vault integration (read side; resolves @KV: env references at boot)
+azure-identity>=1.15,<2.0
+azure-keyvault-secrets>=4.7,<5.0
+
+# Provider SDKs (only the ones you use will actually be imported)
+google-cloud-aiplatform[agent_engines]>=1.71.0
+openai>=1.40,<2.0
+boto3>=1.34,<2.0
+anthropic>=0.34,<1.0
+
+# Microsoft Agent 365 Observability SDK (telemetry)
+# Only -core is imported by the generated agent_observability.py. The
+# -runtime and -hosting companion packages are not used here, and -runtime
+# is not even available on PyPI (as of writing). Add them yourself if you
+# extend the wrapper to use hosting/runtime APIs.
+microsoft-agents-a365-observability-core>=1.0.0

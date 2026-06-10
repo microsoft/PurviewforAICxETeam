@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Environment Diagnostics · Agent SDK Onboarder{% endblock %}
+{% block content %}
+<div class="intro">
+  <h2>🔬 Environment Diagnostics</h2>
+  <p>Runs the same prerequisite checks the form's "Check prerequisites" button uses,
+     but with no agent context — just local machine + signed-in tenant.</p>
+  <p class="muted">
+    To include a provider check, use the form on the
+    <a href="{{ url_for('index') }}">main page</a> and click <em>Check prerequisites</em>
+    after filling provider fields.
+  </p>
+</div>
+
+<section class="card">
+  <h3><span class="num">▶</span> Run checks</h3>
+  <p>
+    <button id="run" class="primary" onclick="run()">Run all checks now</button>
+    <span id="status" class="muted" style="margin-left:12px"></span>
+  </p>
+  <div id="results"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+var levelEmoji = {ok:'✓', warn:'!', fail:'✗', skipped:'–'};
+var levelColor = {ok:'#16a34a', warn:'#d97706', fail:'#dc2626', skipped:'#6b7280'};
+
+function render(report){
+  var html = '';
+  var overall = report.overall;
+  var pillBg = overall==='ok'?'#dcfce7':(overall==='warn'?'#fef3c7':'#fee2e2');
+  var pillFg = overall==='ok'?'#166534':(overall==='warn'?'#92400e':'#991b1b');
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:6px;background:'+pillBg+';color:'+pillFg+';margin:14px 0;font-weight:600">'
+        + (overall==='ok'?'✅ Ready to onboard':(overall==='warn'?'⚠️ Some warnings':'❌ Not ready — fix failures'))
+        + ' <span style="font-weight:400;font-size:13px">'+report.counts.ok+' ok · '+report.counts.warn+' warn · '+report.counts.fail+' fail · '+report.counts.skipped+' skipped</span></div>';
+  var lastCat = null;
+  report.results.forEach(function(r){
+    if (r.category !== lastCat){
+      lastCat = r.category;
+      html += '<h4 style="margin:14px 0 6px;font-size:13px;text-transform:uppercase;color:#6b7280;letter-spacing:.04em">'+lastCat+'</h4>';
+    }
+    html += '<div style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:14px">'
+         +  '<span style="display:inline-block;width:22px;color:'+levelColor[r.level]+';font-weight:700">'+levelEmoji[r.level]+'</span>'
+         +  '<strong>'+r.name+'</strong> — '+r.summary;
+    if (r.detail){
+      html += '<div style="color:#6b7280;font-size:13px;margin-left:26px;margin-top:3px;white-space:pre-wrap">'+r.detail+'</div>';
+    }
+    if ((r.level==='warn' || r.level==='fail') && r.fix){
+      html += '<div style="color:#0078d4;font-size:13px;margin-left:26px;margin-top:3px">→ '+r.fix+'</div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function run(){
+  var btn = document.getElementById('run');
+  var status = document.getElementById('status');
+  var results = document.getElementById('results');
+  btn.disabled = true;
+  status.textContent = 'running checks (~15s)…';
+  results.innerHTML = '';
+  fetch("{{ url_for('diagnostics_api') }}", {method:'POST', body:new FormData()})
+    .then(function(r){ return r.json(); })
+    .then(function(report){
+      results.innerHTML = render(report);
+      status.textContent = 'done.';
+      btn.disabled = false;
+    })
+    .catch(function(e){
+      results.innerHTML = '<div class="alert err">Failed: '+e+'</div>';
+      btn.disabled = false; status.textContent='';
+    });
+}
+// Auto-run on first visit
+run();
+</script>
+{% endblock %}

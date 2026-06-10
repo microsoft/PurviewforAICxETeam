@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Onboarding {{ cfg.agent_display_name }} · Agent SDK Onboarder{% endblock %}
+{% block content %}
+<section class="card">
+  <h3>
+    <span class="num">▶</span>
+    Onboarding <em>{{ cfg.agent_display_name }}</em>
+    <span class="status-pill running" id="status">running…</span>
+  </h3>
+  <div class="muted" style="margin-bottom:10px">
+    Run ID: <code>{{ run_id }}</code> · Provider: <code>{{ cfg.provider }}</code> ·
+    Slug: <code>{{ cfg.agent_slug }}</code>
+  </div>
+  <div id="log" class="log"></div>
+  <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center">
+    <span class="muted" id="hint">Streaming progress over Server-Sent Events. Keep this tab open.</span>
+    <a id="resultLink" class="primary" style="display:none; text-decoration:none; padding:8px 16px; background:#0078d4; color:#fff; border-radius:6px"
+       href="{{ url_for('result_page', run_id=run_id) }}">View result →</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var logEl = document.getElementById('log');
+  var statusEl = document.getElementById('status');
+  var hintEl = document.getElementById('hint');
+  var resultLink = document.getElementById('resultLink');
+  var resultUrl = "{{ url_for('result_page', run_id=run_id) }}";
+
+  function classify(line){
+    if (/^\[FATAL]/.test(line) || /^\[ERROR]/.test(line)) return 'err';
+    if (/^\[WARN]/.test(line)) return 'warn';
+    if (/^\[OK]/.test(line) || /^\[DONE]/.test(line)) return 'ok';
+    if (/^\[CMD]/.test(line) || /^\$ /.test(line)) return 'cmd';
+    if (/^\[INFO]/.test(line) || /^\[STEP]/.test(line)) return 'info';
+    return '';
+  }
+  function append(line){
+    var div = document.createElement('div');
+    var cls = classify(line);
+    if (cls) div.className = cls;
+    div.textContent = line;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function finish(status){
+    statusEl.classList.remove('running');
+    statusEl.classList.add(status === 'succeeded' ? 'succeeded' : 'failed');
+    statusEl.textContent = status;
+    hintEl.textContent = status === 'succeeded'
+      ? 'Done! Click below for the full result.'
+      : 'Onboarding stopped — see log above. Click below for details.';
+    resultLink.style.display = 'inline-block';
+    if (status === 'succeeded') {
+      setTimeout(function(){ window.location.href = resultUrl; }, 2000);
+    }
+  }
+
+  var es = new EventSource("{{ url_for('progress_stream', run_id=run_id) }}");
+  es.onmessage = function(ev){
+    try {
+      var data = JSON.parse(ev.data);
+      if (data.line && data.line !== '[END]') append(data.line);
+      if (data.done) { es.close(); finish(data.status || 'succeeded'); }
+    } catch(e) { append('[parse-error] ' + ev.data); }
+  };
+  es.onerror = function(){
+    append('[WARN] stream disconnected — checking final status…');
+    setTimeout(function(){ window.location.href = resultUrl; }, 1500);
+  };
+})();
+</script>
+{% endblock %}

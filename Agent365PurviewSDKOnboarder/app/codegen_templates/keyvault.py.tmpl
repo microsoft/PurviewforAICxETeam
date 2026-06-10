@@ -1,0 +1,144 @@
+"""Resolve @KV: env-var references to live secrets at agent startup.
+
+This module is COPIED into every generated agent. It owns the READ side of
+the @KV: scheme:
+
+    .env file:    PURVIEW_CLIENT_SECRET=@KV:SDKOnboarder/<slug>-purview-client-secret
+    after resolve_env_refs():
+                  PURVIEW_CLIENT_SECRET=<literal secret, in memory only>
+
+Authentication uses azure.identity.DefaultAzureCredential, which on a local
+dev machine resolves to the `az login` token cache at ~/.azure/. In a
+deployed environment, prefer a managed identity or service-principal
+environment variables.
+
+Design notes:
+  * Fail-closed: if any single @KV: reference cannot be resolved, this
+    raises RuntimeError. The agent will refuse to start. This is intentional;
+    silently falling back to an empty string would mask a critical config
+    issue and could even cause silent auth bypass.
+  * Retries: up to 3 attempts with 1s/2s/4s backoff between, so a brief
+    network blip doesn't kill startup.
+  * Per-vault SecretClient cache: a single agent typically pulls 1-4 secrets
+    from a single vault, so we reuse the client (saves ~150ms per extra call).
+  * Never logs the literal secret value - only the secret NAME and vault.
+"""
+from __future__ import annotations
+
+import logging
+import os
+import re
+import time
+from typing import MutableMapping, Optional
+
+log = logging.getLogger("keyvault")
+
+KV_REF_PREFIX = "@KV:"
+# Matches @KV:<vault-name>/<secret-name>
+_REF_RE = re.compile(r"^@KV:([0-9a-zA-Z][0-9a-zA-Z-]{0,126})/([0-9a-zA-Z][0-9a-zA-Z-]{0,126})$")
+
+_CLIENTS: dict[str, object] = {}
+
+
+def parse_ref(value: str) -> Optional[tuple[str, str]]:
+    """Return (vault_name, secret_name) if value is a @KV: ref, else None."""
+    if not isinstance(value, str) or not value.startswith(KV_REF_PREFIX):
+        return None
+    m = _REF_RE.match(value)
+    if not m:
+        raise ValueError(
+            f"Malformed @KV: reference (expected @KV:<vault>/<secret>): {value!r}"
+        )
+    return m.group(1), m.group(2)
+
+
+def _get_client(vault_name: str):
+    """Return a cached SecretClient for the given vault."""
+    if vault_name in _CLIENTS:
+        return _CLIENTS[vault_name]
+    try:
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+    except ImportError as exc:
+        raise RuntimeError(
+            "azure-keyvault-secrets and azure-identity must be installed for "
+            "Key Vault resolution. Add them to requirements.txt and re-launch."
+        ) from exc
+    url = f"https://{vault_name}.vault.azure.net/"
+    cred = DefaultAzureCredential(exclude_interactive_browser_credential=False)
+    client = SecretClient(vault_url=url, credential=cred)
+    _CLIENTS[vault_name] = client
+    return client
+
+
+def _fetch_secret(vault_name: str, secret_name: str) -> str:
+    """Fetch a single secret with bounded retries.
+
+    Retries: 3 attempts at 0s/1s/3s elapsed (cumulative). Total worst-case
+    wait ~3s before fail-closed. Any AuthenticationError on first try is
+    propagated immediately (no point retrying auth failures).
+    """
+    last_exc: Optional[Exception] = None
+    for attempt in range(3):
+        if attempt > 0:
+            time.sleep(2 ** (attempt - 1))  # 1s, then 2s
+        try:
+            client = _get_client(vault_name)
+            secret = client.get_secret(secret_name)
+            if attempt > 0:
+                log.info(
+                    "fetched secret %s from vault %s (succeeded on attempt %d)",
+                    secret_name, vault_name, attempt + 1,
+                )
+            return secret.value
+        except Exception as exc:
+            last_exc = exc
+            # Auth errors are not transient; fail fast.
+            if type(exc).__name__ in ("ClientAuthenticationError", "CredentialUnavailableError"):
+                break
+            log.warning(
+                "attempt %d to fetch secret %s from vault %s failed: %s: %s",
+                attempt + 1, secret_name, vault_name, type(exc).__name__, exc,
+            )
+    raise RuntimeError(
+        f"Failed to resolve @KV: reference for secret {secret_name!r} in vault "
+        f"{vault_name!r} after retries. Last error: "
+        f"{type(last_exc).__name__ if last_exc else 'unknown'}: {last_exc}. "
+        f"Hint: verify `az account show` succeeds AND your user has the "
+        f"'Key Vault Secrets User' role on this vault."
+    ) from last_exc
+
+
+def resolve_env_refs(env: MutableMapping[str, str]) -> list[str]:
+    """Walk env, replacing every @KV: reference with the live secret value.
+
+    Mutates `env` in place. Returns the list of env-keys that were resolved
+    (useful for logging at startup, e.g. "resolved 4 KV refs: ['PURVIEW_CLIENT_SECRET', ...]").
+
+    Raises RuntimeError if any single reference cannot be resolved (fail-closed).
+    """
+    resolved: list[str] = []
+    refs_to_resolve: list[tuple[str, str, str]] = []  # (env_key, vault, secret_name)
+
+    # Pass 1: detect + validate (so we either resolve all or none)
+    for env_key, value in list(env.items()):
+        parsed = parse_ref(value) if isinstance(value, str) else None
+        if parsed is None:
+            continue
+        vault_name, secret_name = parsed
+        refs_to_resolve.append((env_key, vault_name, secret_name))
+
+    if not refs_to_resolve:
+        return resolved
+
+    # Pass 2: fetch + replace
+    for env_key, vault_name, secret_name in refs_to_resolve:
+        value = _fetch_secret(vault_name, secret_name)
+        env[env_key] = value
+        resolved.append(env_key)
+
+    log.info(
+        "resolved %d Key Vault references at startup: %s",
+        len(resolved), resolved,
+    )
+    return resolved

@@ -1,0 +1,52 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+
+# --- PyInstaller ---
+*.spec.bak
+*.manifest
+*.exe
+
+# --- Onboarder runtime ---
+generated/
+logs/
+*.log
+*.log.err
+*.pid
+diagnostics-report.json
+.onb.log
+.onb.log.err
+onboarder.out.log
+onboarder.err.log
+
+# --- IDE / tooling ---
+.vscode/
+.idea/
+*.swp
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Secrets / local config ---
+.env
+.env.*
+!.env.example
+settings.json

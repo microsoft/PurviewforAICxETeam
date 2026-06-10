@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Agent SDK Onboarder{% endblock %}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* Prerequisites modal (v1.7.4) — additive UX, owns its own CSS namespace.
+       Visuals updated for Fluent / Purview refresh; behavior unchanged. */
+    #prereqOverlay { position:fixed; inset:0; background:rgba(15,23,42,.55);
+                     display:none; align-items:flex-start; justify-content:center;
+                     z-index:9999; padding:48px 16px; overflow-y:auto;
+                     backdrop-filter: blur(4px); }
+    #prereqOverlay.open { display:flex; }
+    #prereqWindow { background:#fff; border-radius:12px; width:100%;
+                    max-width:880px;
+                    box-shadow: 0 0 2px rgba(0,0,0,.12), 0 16px 32px rgba(0,0,0,.18);
+                    border: 1px solid #E0E0E0;
+                    position:relative; max-height:calc(100vh - 96px);
+                    display:flex; flex-direction:column; overflow:hidden; }
+    #prereqClose { position:absolute; top:8px; right:10px; background:transparent;
+                   border:none; font-size:22px; line-height:1; color:#616161;
+                   cursor:pointer; padding:6px 10px; border-radius:4px; z-index:2; }
+    #prereqClose:hover { background:#F5F5F5; color:#242424; }
+    #prereqBody  { overflow-y:auto; padding:6px; }
+    #prereqBody .prereq-shell { border:none; box-shadow:none; }
+    .prereq-btn { background:#0F6CBD; color:#fff; text-decoration:none;
+                  padding:7px 14px; border-radius:4px; font-size:13px;
+                  font-weight:600; display:inline-flex; align-items:center;
+                  gap:6px; border:1px solid #0F6CBD; cursor:pointer;
+                  font-family: inherit; transition: background .12s ease; }
+    .prereq-btn:hover { background:#115EA3; border-color:#115EA3; }
+  </style>
+</head>
+<body>
+  <!-- M365-style suite header bar (visual only; functionality unchanged). -->
+  <div class="m365-suite-bar" role="banner">
+    <button type="button" class="waffle-btn" aria-label="App launcher" title="App launcher (visual)">
+      <span class="waffle-icon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </button>
+    <div class="brand">
+      <svg class="ms-logo" viewBox="0 0 23 23" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <rect width="10" height="10" fill="#F25022"/>
+        <rect x="13" width="10" height="10" fill="#7FBA00"/>
+        <rect y="13" width="10" height="10" fill="#00A4EF"/>
+        <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
+      </svg>
+      <span class="brand-text">
+        <span class="ms">Microsoft</span>&nbsp;<span class="prod">Purview</span>
+      </span>
+    </div>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="product-tag">
+      <svg class="pv-icon" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pvGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#B266C9"/>
+            <stop offset="100%" stop-color="#5E2D74"/>
+          </linearGradient>
+        </defs>
+        <path d="M12 2 L22 12 L12 22 L2 12 Z" fill="url(#pvGrad)"/>
+        <path d="M12 6 L18 12 L12 18 L6 12 Z" fill="rgba(255,255,255,.18)"/>
+      </svg>
+      <span class="product-tag-text">Agent SDK Onboarder</span>
+    </span>
+    <div class="spacer"></div>
+    <a class="suite-action" href="https://purview.microsoft.com/" target="_blank" rel="noopener" title="Open Microsoft Purview portal">
+      <span>Purview portal</span>
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <path fill="currentColor" d="M5 2v1.5H3.5v9h9V11H14v3a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 2 14V2.5A.5.5 0 0 1 2.5 2H5zm9 0a.5.5 0 0 1 .5.5V7H13V4.56L7.78 9.78l-1.06-1.06L11.94 3.5H9V2h5z"/>
+      </svg>
+    </a>
+  </div>
+
+  <div class="shell">
+    <header>
+      <h1>Agent SDK Onboarder</h1>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button type="button" id="prereqOpenBtn" class="prereq-btn"
+                aria-haspopup="dialog" aria-controls="prereqOverlay"
+                title="Open the prerequisites checklist">
+          📋 Prerequisites
+        </button>
+        <span class="ver">Purview&nbsp;DSPM&nbsp;for&nbsp;AI&nbsp;·&nbsp;Agent&nbsp;365&nbsp;SDK</span>
+      </div>
+    </header>
+    {% block content %}{% endblock %}
+  </div>
+
+  {# In-page Prerequisites modal. Fragment is fetched lazily on first open. #}
+  <div id="prereqOverlay" role="dialog" aria-modal="true"
+       aria-labelledby="prereqOpenBtn" tabindex="-1">
+    <div id="prereqWindow">
+      <button type="button" id="prereqClose" aria-label="Close prerequisites">×</button>
+      <div id="prereqBody">
+        <div style="padding:40px;text-align:center;color:#6b7280">Loading prerequisites…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const btn     = document.getElementById('prereqOpenBtn');
+      const overlay = document.getElementById('prereqOverlay');
+      const body    = document.getElementById('prereqBody');
+      const close   = document.getElementById('prereqClose');
+      let loaded = false;
+
+      async function ensureLoaded() {
+        if (loaded) return;
+        try {
+          const r = await fetch('{{ url_for("prerequisites_page") }}?embed=1',
+                                { credentials: 'same-origin' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          body.innerHTML = await r.text();
+          // Execute any <script> tags the fragment includes (tab switcher).
+          body.querySelectorAll('script').forEach(old => {
+            const s = document.createElement('script');
+            if (old.src) s.src = old.src; else s.textContent = old.textContent;
+            old.replaceWith(s);
+          });
+          loaded = true;
+        } catch (err) {
+          body.innerHTML = '<div style="padding:30px;color:#b91c1c">' +
+            'Could not load prerequisites: ' + (err && err.message || err) +
+            '. <a href="{{ url_for("prerequisites_page") }}" target="_blank" rel="noopener">' +
+            'Open the standalone page instead</a>.</div>';
+        }
+      }
+
+      function open()  { overlay.classList.add('open'); ensureLoaded();
+                         document.body.style.overflow = 'hidden'; }
+      function shut()  { overlay.classList.remove('open');
+                         document.body.style.overflow = ''; }
+
+      btn.addEventListener('click', open);
+      close.addEventListener('click', shut);
+      overlay.addEventListener('click', e => { if (e.target === overlay) shut(); });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) shut();
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
