@@ -1,0 +1,351 @@
+{# Reusable Prerequisites body. Included by:
+    - prerequisites.html (standalone /help/prerequisites page)
+    - prerequisites_embed.html (fragment fetched by the in-page modal)
+   No {% extends %} here — partials must not redefine blocks.
+#}
+<style>
+  .prereq-shell { background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+                  padding:0; overflow:hidden; }
+  .prereq-shell.standalone { box-shadow:0 1px 2px rgba(0,0,0,.04); margin-top:6px; }
+  .prereq-head { padding:16px 22px 0; }
+  .prereq-head h2 { margin:0; font-size:18px; color:#0078d4; }
+  .prereq-head .lede { color:#4b5563; font-size:13.5px; margin:4px 0 14px; }
+  .prereq-tabs { display:flex; gap:2px; padding:0 22px; border-bottom:1px solid #e5e7eb;
+                 flex-wrap:wrap; }
+  .prereq-tabs button { background:transparent; border:none; padding:10px 14px;
+                        font-size:13.5px; font-weight:600; color:#6b7280; cursor:pointer;
+                        border-bottom:3px solid transparent; margin-bottom:-1px; }
+  .prereq-tabs button:hover { color:#111827; }
+  .prereq-tabs button.active { color:#0078d4; border-bottom-color:#0078d4; }
+  .prereq-pane { display:none; padding:18px 22px 22px; }
+  .prereq-pane.active { display:block; }
+  .prereq-pane h3 { margin:0 0 4px; font-size:15px; color:#111827; }
+  .prereq-pane h3 + p { color:#6b7280; font-size:13px; margin:0 0 12px; }
+  .prereq-pane h4 { margin:14px 0 4px; font-size:13.5px; color:#374151; }
+  .prereq-pane p, .prereq-pane li { font-size:13.5px; color:#374151; line-height:1.55; }
+  .prereq-pane ul { margin:4px 0 6px 18px; padding:0; }
+  .prereq-pane code { font-family:Consolas,Menlo,monospace; font-size:12.5px;
+                      background:#f3f4f6; border:1px solid #e5e7eb; border-radius:3px;
+                      padding:1px 5px; }
+  .prereq-pane pre { font-family:Consolas,Menlo,monospace; font-size:12.5px;
+                     background:#0b0b0d; color:#d1d5db; padding:9px 12px;
+                     border-radius:6px; margin:6px 0 10px; overflow-x:auto; }
+  .prereq-pane a { color:#0078d4; text-decoration:none; }
+  .prereq-pane a:hover { text-decoration:underline; }
+  .lic-card { border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px;
+              margin-bottom:8px; background:#fafafa; }
+  .lic-card .lic-title { display:flex; justify-content:space-between; align-items:baseline;
+                         gap:8px; }
+  .lic-card .lic-name { font-weight:600; color:#111827; font-size:13.5px; }
+  .lic-card .lic-tag { font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; }
+  .lic-tag.rec  { background:#dcfce7; color:#166534; }
+  .lic-tag.alt  { background:#e0e7ff; color:#3730a3; }
+  .lic-tag.opt  { background:#fef3c7; color:#92400e; }
+  .lic-card p { margin:4px 0 0; font-size:12.5px; color:#4b5563; }
+  .perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+  .perm-grid .perm-card { border:1px solid #e5e7eb; border-radius:8px; padding:10px 14px; }
+  .perm-grid .perm-card .ptitle { font-weight:600; color:#111827; font-size:13px;
+                                  margin-bottom:6px; }
+  .perm-grid .perm-card ul { margin:0 0 0 16px; }
+  .ptable { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .ptable th, .ptable td { text-align:left; padding:7px 10px; border-bottom:1px solid #e5e7eb;
+                           vertical-align:top; }
+  .ptable th { background:#f9fafb; color:#374151; font-weight:600; }
+  .check { background:#ecfdf5; border:1px solid #6ee7b7; border-radius:8px;
+           padding:10px 14px; }
+  .check ul { list-style:none; padding-left:0; margin:6px 0 0; }
+  .check li { padding:3px 0 3px 22px; position:relative; font-size:13px; }
+  .check li::before { content:"☐"; position:absolute; left:0; top:2px; color:#059669;
+                      font-size:14px; }
+  .prov-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px;
+               margin:10px 0; background:#fafafa; }
+  .prov-card h4 { margin:0 0 8px; display:flex; justify-content:space-between;
+                  align-items:baseline; font-size:14px; color:#111827; }
+  .prov-card h4 .prov-tag { font-size:10.5px; font-weight:600; padding:1px 7px;
+                            border-radius:999px; background:#e0e7ff; color:#3730a3; }
+  .prov-card .prov-tag.tested { background:#dcfce7; color:#166534; }
+  .prov-card ol { margin:4px 0 8px 18px; padding:0; font-size:13px; }
+  .prov-card ol li { margin-bottom:4px; }
+  .prov-card .map { margin:6px 0 0; font-size:12.5px; color:#374151; }
+  .prov-card .map code { font-size:11.5px; }
+  .prov-card .refs { margin-top:6px; font-size:12px; color:#6b7280; }
+  .prov-card .refs a { margin-right:10px; }
+  .src-note { margin-top:14px; padding:8px 12px; background:#fefce8;
+              border:1px solid #fef08a; border-radius:6px; font-size:12.5px;
+              color:#713f12; }
+  .src-note a { color:#713f12; text-decoration:underline; }
+  @media (max-width:640px) {
+    .perm-grid { grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="prereq-shell{% if not embed %} standalone{% endif %}">
+  <div class="prereq-head">
+    <h2>📋 Prerequisites</h2>
+    <p class="lede">Have these in place before clicking <em>Onboard</em>. Tap a tab below — most users only need to check tabs 1, 2, and the one matching their AI provider.</p>
+  </div>
+
+  <div class="prereq-tabs" role="tablist">
+    <button type="button" class="active" data-pane="lic">Microsoft licenses</button>
+    <button type="button"                data-pane="perm">User permissions</button>
+    <button type="button"                data-pane="tools">Local tools</button>
+    <button type="button"                data-pane="prov">Provider creds</button>
+    <button type="button"                data-pane="chk">Checklist</button>
+  </div>
+
+  <div class="prereq-pane active" data-pane="lic">
+    <h3>Microsoft 365 / Purview licenses on the tenant</h3>
+    <p>The onboarder writes to Microsoft Purview and (optionally) Agent 365. Your tenant needs at least one of the following. <a href="https://learn.microsoft.com/en-us/purview/dspm-for-ai" target="_blank" rel="noopener">Microsoft Learn: DSPM for AI ↗</a></p>
+
+    <div class="lic-card">
+      <div class="lic-title">
+        <span class="lic-name">Microsoft 365 E5</span>
+        <span class="lic-tag rec">RECOMMENDED</span>
+      </div>
+      <p>Includes the <strong>Microsoft Purview Suite</strong> at no extra cost — covers Purview DLP, DSPM, and DSPM for AI out of the box. Nothing else to add.</p>
+    </div>
+
+    <div class="lic-card">
+      <div class="lic-title">
+        <span class="lic-name">Microsoft Purview Suite (formerly E5 Compliance)</span>
+        <span class="lic-tag alt">ALTERNATIVE</span>
+      </div>
+      <p>Add-on to M365 E3, Office 365 E3 + EMS E3, or M365 E5. The <em>E5 Compliance</em> SKU was renamed to <strong>Microsoft Purview Suite</strong> in 2025; existing E5 Compliance customers retain access. New standalone E5 Compliance purchases stopped after Sept 2025 — buy <em>Purview Suite</em> instead.</p>
+    </div>
+
+    <div class="lic-card">
+      <div class="lic-title">
+        <span class="lic-name">Microsoft Purview DSPM for AI (standalone add-on)</span>
+        <span class="lic-tag alt">ALTERNATIVE</span>
+      </div>
+      <p>If your tenant only needs the AI-governance scenarios, the DSPM-for-AI add-on alone is sufficient for what this onboarder creates. Devices monitoring 3rd-party AI sites also need the Microsoft Purview browser extension deployed.</p>
+    </div>
+
+    <div class="lic-card">
+      <div class="lic-title">
+        <span class="lic-name">Microsoft Agent 365 enrollment</span>
+        <span class="lic-tag opt">OPTIONAL</span>
+      </div>
+      <p>Only required if you tick <em>Agent 365 blueprint</em> or <em>Agent 365 observability</em> on the form. Tenant must be enrolled in the Agent 365 program. <a href="https://learn.microsoft.com/microsoft-agent-365/" target="_blank" rel="noopener">Microsoft Learn ↗</a></p>
+    </div>
+
+    <h4>How to verify</h4>
+    <p>Microsoft 365 admin center → <em>Billing → Your products</em>. Or for the signed-in user: Graph Explorer → <code>GET /me/licenseDetails</code>.</p>
+
+    <div class="src-note">
+      <strong>Sources:</strong>
+      <a href="https://learn.microsoft.com/en-us/purview/dspm-for-ai" target="_blank" rel="noopener">DSPM for AI overview</a> ·
+      <a href="https://learn.microsoft.com/en-us/purview/dspm-for-ai-considerations" target="_blank" rel="noopener">DSPM-for-AI considerations</a>
+    </div>
+  </div>
+
+  <div class="prereq-pane" data-pane="perm">
+    <h3>Permissions for the signed-in user</h3>
+    <p>The identity that runs <code>az login</code> is the one the onboarder acts as. They need:</p>
+
+    <div class="perm-grid">
+      <div class="perm-card">
+        <div class="ptitle">Microsoft Entra ID</div>
+        <ul>
+          <li><strong>Application Developer</strong> — to create the app registration</li>
+          <li><strong>Privileged Role Administrator</strong> <em>or</em> <strong>Global Administrator</strong> — to admin-consent the Graph permissions below</li>
+        </ul>
+      </div>
+
+      <div class="perm-card">
+        <div class="ptitle">Microsoft Purview (DSPM for AI)</div>
+        <ul>
+          <li><strong>Compliance Administrator</strong> <em>or</em> <strong>Microsoft Purview Compliance Administrator</strong> — full management</li>
+          <li><em>View-only</em>: <strong>Purview Security Reader</strong>, <strong>Purview Data Security AI Viewer</strong>, <strong>AI Administrator</strong>, or <strong>Purview Data Security AI Content Viewer</strong></li>
+          <li>Access at <a href="https://purview.microsoft.com" target="_blank" rel="noopener">purview.microsoft.com</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <h4>Permissions granted to the new app (not held by you)</h4>
+    <p>The onboarder requests these <strong>Application</strong> permissions on Microsoft Graph and admin-consents them as you:</p>
+    <table class="ptable">
+      <tr><th>Permission</th><th>Purpose</th></tr>
+      <tr><td><code>Content.Process.All</code></td>
+          <td><code>processContent</code> + <code>contentActivities</code> — required for the wrapper to run governed content through Purview.</td></tr>
+      <tr><td><code>ProtectionScopes.Compute.All</code></td>
+          <td><code>protectionScopes/compute</code> — required for the wrapper to evaluate which protection labels/policies apply.</td></tr>
+    </table>
+    <p style="margin-top:8px;color:#6b7280;font-size:12.5px">If you lack the consent role the app + secret are still created; consent can be granted later from <em>Entra → App registrations → &lt;your app&gt; → API permissions → Grant admin consent</em>.</p>
+
+    <div class="src-note">
+      <strong>Sources:</strong>
+      <a href="https://learn.microsoft.com/en-us/purview/dspm-for-ai-permissions" target="_blank" rel="noopener">Purview DSPM-for-AI roles</a> ·
+      <a href="https://learn.microsoft.com/en-us/graph/permissions-reference" target="_blank" rel="noopener">Graph permissions reference</a>
+    </div>
+  </div>
+
+  <div class="prereq-pane" data-pane="tools">
+    <h3>Tools on your machine</h3>
+
+    <h4>Required for every onboarding</h4>
+    <ul>
+      <li><strong>Azure CLI</strong> 2.55+ — <code>az --version</code> · <a href="https://learn.microsoft.com/cli/azure/install-azure-cli" target="_blank" rel="noopener">install ↗</a></li>
+      <li><strong>Python 3.10+</strong> — <code>python --version</code></li>
+    </ul>
+
+    <h4>Required only for matching provider</h4>
+    <ul>
+      <li><strong>Google Cloud SDK</strong> (Vertex agents) — <code>gcloud auth application-default login</code></li>
+      <li><strong>AWS CLI</strong> (Bedrock agents) — <code>aws configure</code></li>
+      <li><strong>Agent 365 CLI</strong> (only if ticking Agent 365 features) — <code>a365 --version</code></li>
+    </ul>
+
+    <h4>Sign in before you start</h4>
+    <pre>az login --tenant &lt;your-tenant&gt;
+az account set --subscription &lt;subscription-id&gt;</pre>
+    <p style="margin-top:0;color:#6b7280;font-size:12.5px">The onboarder cross-checks <code>az account show</code> against the tenant + UPN you type on the form and refuses to proceed on mismatch.</p>
+  </div>
+
+  <div class="prereq-pane" data-pane="prov">
+    <h3>Provider credentials — what to set up before clicking Onboard</h3>
+    <p>Only the card matching your chosen provider applies. Each card mirrors the form fields you'll fill in. Use <em>Run diagnostics</em> on the form to verify before submitting.</p>
+
+    <div class="prov-card">
+      <h4>Google Vertex AI (Agent Engine / Reasoning Engine) <span class="prov-tag tested">END-TO-END TESTED</span></h4>
+      <ol>
+        <li>In <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, create or pick a project and enable billing.</li>
+        <li>Enable the <strong>Vertex AI API</strong>: <code>gcloud services enable aiplatform.googleapis.com</code></li>
+        <li>Grant your user (or service account) <code>roles/aiplatform.user</code> on the project. For deployments using a service account also grant <code>roles/iam.serviceAccountUser</code>.</li>
+        <li>Build and deploy your ADK agent to Vertex Agent Engine. The deploy returns a <strong>resource name</strong> like <code>projects/&lt;num&gt;/locations/us-central1/reasoningEngines/&lt;id&gt;</code>.</li>
+        <li>On your machine: <code>gcloud auth application-default login</code>.</li>
+      </ol>
+      <p class="map"><strong>Form fields:</strong> <code>GCP project ID</code> · <code>region</code> (e.g. <code>us-central1</code>) · <code>Reasoning Engine resource name</code> (paste the full <code>projects/.../reasoningEngines/...</code> string)</p>
+      <p class="refs">
+        <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview" target="_blank" rel="noopener">Agent Engine overview ↗</a>
+        <a href="https://cloud.google.com/vertex-ai/docs/general/iam-permissions" target="_blank" rel="noopener">Vertex AI IAM ↗</a>
+        <a href="https://cloud.google.com/sdk/docs/install" target="_blank" rel="noopener">Install gcloud ↗</a>
+      </p>
+    </div>
+
+    <div class="prov-card">
+      <h4>AWS Bedrock — <em>Path A: Foundation model</em> (Converse API) <span class="prov-tag">CODE-COMPLETE, NOT YET E2E-TESTED</span></h4>
+      <ol>
+        <li>In the <a href="https://console.aws.amazon.com/bedrock" target="_blank" rel="noopener">Bedrock console</a>, switch to the region you want (e.g. <code>us-east-1</code>), open <strong>Model access</strong>, and explicitly request access to the model family you want (Anthropic Claude, Meta Llama, Amazon Titan, etc.). Some models require an org / use-case form.</li>
+        <li>Grant the IAM identity (user / role) that will run the wrapper the action <code>bedrock:InvokeModel</code> on the model (or inference-profile) ARN. Add <code>bedrock:InvokeModelWithResponseStream</code> only if you'll use streaming (this onboarder does not).</li>
+        <li>Configure credentials locally: <code>aws configure</code> (writes <code>~/.aws/credentials</code>), OR set <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> / <code>AWS_SESSION_TOKEN</code> env vars, OR use an attached IAM role.</li>
+        <li>Confirm the model ID: e.g. <code>us.anthropic.claude-3-5-sonnet-20241022-v2:0</code>. Many on-demand Anthropic models <strong>require</strong> the <code>us.</code> (or <code>eu.</code>) cross-region inference profile prefix — without it you'll get <code>ValidationException: Invocation of model ID … with on-demand throughput isn't supported</code>.</li>
+      </ol>
+      <p class="map"><strong>Form fields (Bedrock target = Foundation model):</strong> <code>AWS region</code> · <code>Bedrock model ID</code> · <code>access key ID</code> + <code>secret access key</code> (optional — leave blank to use the default credential chain) · <code>session token</code> (only for temporary STS creds)</p>
+      <p class="refs">
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html" target="_blank" rel="noopener">Enable model access ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html" target="_blank" rel="noopener">IAM policy examples ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html" target="_blank" rel="noopener">Converse API ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html" target="_blank" rel="noopener">Cross-region inference ↗</a>
+      </p>
+    </div>
+
+    <div class="prov-card">
+      <h4>AWS Bedrock — <em>Path B: Deployed Bedrock Agent</em> (InvokeAgent API) <span class="prov-tag">CODE-COMPLETE, NOT YET E2E-TESTED</span></h4>
+      <ol>
+        <li>In the <a href="https://console.aws.amazon.com/bedrock" target="_blank" rel="noopener">Bedrock console</a> → <strong>Agents</strong> → <em>Create agent</em>. Pick a foundation model the agent should use, attach (optionally) knowledge bases + action groups, then click <strong>Prepare</strong>.</li>
+        <li>After preparation, create an <strong>Alias</strong> for the agent (e.g. <code>PROD</code> pointing to a published version). Aliases let you promote new versions without changing this wrapper's config.</li>
+        <li>Note the <strong>Agent ID</strong> (e.g. <code>AGENT1234ABCD</code>) and the <strong>Agent alias ID</strong> (e.g. <code>TSTALIASID</code> for the auto-created test alias, or your custom alias ID).</li>
+        <li>Grant the <strong>caller / wrapper IAM principal</strong> the action <code>bedrock:InvokeAgent</code> on the agent alias ARN (NOT <code>InvokeModel</code> — that's a different permission for direct model calls). Example resource: <code>arn:aws:bedrock:us-east-1:&lt;account&gt;:agent-alias/AGENT1234ABCD/TSTALIASID</code>.</li>
+        <li>Separately, the <strong>agent's own execution / service role</strong> (configured inside Bedrock when you created the agent) must already grant the agent permission to invoke its underlying foundation model and read any attached knowledge bases / action groups. This is set in the Bedrock console, not by the wrapper.</li>
+        <li>Configure AWS credentials for the wrapper the same way as Path A (<code>aws configure</code>, env vars, or IAM role).</li>
+      </ol>
+      <p class="map"><strong>Form fields (Bedrock target = Deployed Bedrock Agent):</strong> <code>AWS region</code> · <code>Bedrock Agent ID</code> · <code>Agent alias ID</code> · AWS credentials as above</p>
+      <p class="map" style="margin-top:6px;"><strong>Session memory:</strong> the wrapper passes each chat's <code>conversation_id</code> as the Bedrock <code>sessionId</code>, so multi-turn conversations preserve server-side context per user. Set <code>BEDROCK_SESSION_ID</code> in the generated <code>.env</code> only if you want every chat to share one session (debug / single-user only).</p>
+      <p class="map" style="margin-top:6px;"><strong>Limitation:</strong> if your agent has an action group configured to return control to the caller, this wrapper does not implement action-group fulfillment and will raise a clear error. Either remove the action group from the agent or extend <code>adapter.py</code> to handle <code>returnControl</code> events.</p>
+      <p class="refs">
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html" target="_blank" rel="noopener">Bedrock Agents overview ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/agents-permissions.html" target="_blank" rel="noopener">Agent IAM &amp; service role ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/agents-alias.html" target="_blank" rel="noopener">Agent aliases ↗</a>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeAgent.html" target="_blank" rel="noopener">InvokeAgent API ↗</a>
+      </p>
+    </div>
+
+    <div class="prov-card">
+      <h4>Anthropic Claude (direct API) <span class="prov-tag">CODE-COMPLETE, NOT YET E2E-TESTED</span></h4>
+      <ol>
+        <li>Sign in at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> and create (or join) a workspace.</li>
+        <li>Under <strong>Plans &amp; Billing</strong>, add a payment method (free trial credits are limited; sustained API use needs billing).</li>
+        <li>Open <strong>API Keys</strong> → <em>Create Key</em>. Copy the <code>sk-ant-…</code> value immediately — it is shown once.</li>
+        <li>Pick a current model id (e.g. <code>claude-3-5-sonnet-20241022</code>, <code>claude-3-5-haiku-20241022</code>) from the <a href="https://docs.anthropic.com/en/docs/about-claude/models" target="_blank" rel="noopener">model list</a>.</li>
+      </ol>
+      <p class="map"><strong>Form fields:</strong> <code>Model</code> · <code>API key</code> · <code>Base URL</code> (leave blank for <code>https://api.anthropic.com</code>; only set this when routing via a proxy like Helicone / Portkey / LiteLLM)</p>
+      <p class="refs">
+        <a href="https://docs.anthropic.com/en/api/getting-started" target="_blank" rel="noopener">API getting-started ↗</a>
+        <a href="https://docs.anthropic.com/en/docs/about-claude/models" target="_blank" rel="noopener">Models ↗</a>
+      </p>
+    </div>
+
+    <div class="prov-card">
+      <h4>Azure OpenAI <span class="prov-tag">CODE-COMPLETE, NOT YET E2E-TESTED</span></h4>
+      <ol>
+        <li>In the <a href="https://portal.azure.com" target="_blank" rel="noopener">Azure portal</a>, create an <em>Azure OpenAI</em> resource (region with capacity).</li>
+        <li>Open <strong>Azure AI Foundry / Studio → Deployments</strong> and deploy a model (e.g. <code>gpt-4o</code>). Note the <strong>deployment name</strong> you choose.</li>
+        <li>Grab the <strong>endpoint</strong> (<code>https://&lt;resource&gt;.openai.azure.com/</code>) and one of the <strong>keys</strong> from <em>Keys &amp; Endpoint</em>.</li>
+        <li>Pick an <strong>API version</strong> string (e.g. <code>2024-10-21</code> or latest from the API reference).</li>
+      </ol>
+      <p class="map"><strong>Form fields:</strong> <code>Endpoint</code> · <code>Deployment name</code> · <code>API key</code> · <code>API version</code></p>
+      <p class="refs">
+        <a href="https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart" target="_blank" rel="noopener">Quickstart ↗</a>
+        <a href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference" target="_blank" rel="noopener">API versions ↗</a>
+      </p>
+    </div>
+
+    <div class="prov-card">
+      <h4>OpenAI (platform.openai.com) <span class="prov-tag">CODE-COMPLETE, NOT YET E2E-TESTED</span></h4>
+      <ol>
+        <li>Sign in at <a href="https://platform.openai.com" target="_blank" rel="noopener">platform.openai.com</a>, add a payment method under <em>Billing</em>.</li>
+        <li><em>API keys</em> → <em>Create new secret key</em>; copy the <code>sk-…</code> value once.</li>
+        <li>Pick a model id (e.g. <code>gpt-4o-mini</code>, <code>gpt-4.1</code>) from the <a href="https://platform.openai.com/docs/models" target="_blank" rel="noopener">model list</a>.</li>
+      </ol>
+      <p class="map"><strong>Form fields:</strong> <code>API key</code> · <code>Model</code></p>
+    </div>
+
+    <div class="prov-card">
+      <h4>Custom HTTP endpoint</h4>
+      <ol>
+        <li>Stand up your own POST endpoint that accepts JSON and returns JSON.</li>
+        <li>Decide the request shape (which JSON field holds the user prompt) and the response shape (JSONPath to extract the assistant reply).</li>
+        <li>If the endpoint requires auth, prepare a bearer token or static header.</li>
+      </ol>
+      <p class="map"><strong>Form fields:</strong> <code>Endpoint URL</code> · <code>Method</code> · <code>Prompt field name</code> · <code>Response JSONPath</code> · optional <code>Authorization header</code></p>
+    </div>
+
+    <div class="src-note">
+      <strong>Note:</strong> Only the Vertex AI path has been end-to-end verified in this build. The other adapter templates (Bedrock / Anthropic / Azure OpenAI / OpenAI / Custom HTTP) are code-complete and pass the diagnostics reachability checks, but a full live chat round-trip in your tenant for those providers has not been verified yet. The setup steps above are derived from the official vendor docs (see source links beside each card).
+    </div>
+  </div>
+
+  <div class="prereq-pane" data-pane="chk">
+    <h3>Final pre-flight checklist</h3>
+    <div class="check">
+      <ul>
+        <li>Tenant has Microsoft 365 E5 (or E5 Compliance / DSPM for AI) assigned</li>
+        <li><code>az login</code> works and shows the right tenant + UPN</li>
+        <li>You have Application Developer in Entra (or someone on standby with consent rights)</li>
+        <li>You have Compliance Administrator in Purview</li>
+        <li>Python 3.10+ and the Azure CLI are on <code>PATH</code></li>
+        <li>Provider credentials from <em>Provider creds</em> tab are ready</li>
+        <li>You know the local TCP port the wrapper will bind to (defaults to 8080)</li>
+        <li>For Vertex: <code>gcloud auth application-default login</code> already done</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const shells = document.querySelectorAll('.prereq-shell');
+  const shell = shells[shells.length - 1];
+  if (!shell || shell.dataset.wired) return;
+  shell.dataset.wired = '1';
+  const tabs = shell.querySelectorAll('.prereq-tabs button');
+  const panes = shell.querySelectorAll('.prereq-pane');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.toggle('active', b === btn));
+      panes.forEach(p => p.classList.toggle('active', p.dataset.pane === btn.dataset.pane));
+    });
+  });
+})();
+</script>

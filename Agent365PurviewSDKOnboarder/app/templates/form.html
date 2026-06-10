@@ -1,0 +1,2026 @@
+{% extends "base.html" %}
+{% block title %}Onboard a new agent · Agent SDK Onboarder{% endblock %}
+{% block content %}
+<style>
+  .prefill-banner {
+    background: #eef5ff;
+    border: 1px solid #b6d4ff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .prefill-banner .prefill-clear {
+    font-weight: 600;
+  }
+  .kv-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 4px solid currentColor;
+    margin: 12px 0 4px 0;
+  }
+  .kv-pill .kv-icon {
+    font-size: 22px;
+    line-height: 1;
+    flex: 0 0 auto;
+  }
+  .kv-pill strong {
+    font-weight: 600;
+    display: block;
+  }
+  .kv-pill .kv-sub {
+    font-size: 12.5px;
+    color: #475569;
+    margin-top: 3px;
+  }
+  .kv-pill code {
+    background: rgba(15, 23, 42, .06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .kv-pill-ok {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #10b981;
+  }
+  .kv-pill-bad {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #dc2626;
+  }
+
+  /* ─── Multi-vault picker (v1.8) ──────────────────────────────────── */
+  .kv-picker {
+    border: 1px solid #d6e4ff;
+    border-left: 4px solid #10b981;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 12px 0 4px 0;
+  }
+  .kv-picker.kv-picker-warn {
+    border-color: #fde68a;
+    border-left-color: #f59e0b;
+    background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  }
+  .kv-picker.kv-picker-error {
+    border-color: #fecaca;
+    border-left-color: #dc2626;
+    background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%);
+  }
+  .kv-picker-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .kv-picker-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #047857;
+  }
+  .kv-picker.kv-picker-warn .kv-picker-title { color: #92400e; }
+  .kv-picker.kv-picker-error .kv-picker-title { color: #991b1b; }
+  .kv-picker-title .kv-icon { font-size: 20px; }
+  .kv-picker-summary {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #334155;
+  }
+  .kv-picker-summary code {
+    background: rgba(15, 23, 42, .06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .kv-picker .btn-link {
+    background: transparent;
+    border: 1px solid #94a3b8;
+    color: #0f172a;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .kv-picker .btn-link:hover { background: rgba(15, 23, 42, .05); }
+  .kv-picker .btn-primary {
+    background: #0078d4;
+    color: #fff;
+    border: 1px solid #0078d4;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .kv-picker .btn-primary:hover { background: #106ebe; }
+  .kv-picker .btn-primary:disabled {
+    background: #94a3b8;
+    border-color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .kv-picker-body {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(15, 23, 42, .08);
+    display: none;
+  }
+  .kv-picker-body.open { display: block; }
+
+  .kv-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    flex-wrap: wrap;
+  }
+  .kv-row label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    min-width: 110px;
+  }
+  .kv-row select, .kv-row input[type=text] {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    min-width: 180px;
+  }
+
+  .kv-vault-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    margin: 6px 0;
+  }
+  .kv-vault-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .kv-vault-item:last-child { border-bottom: none; }
+  .kv-vault-item:hover { background: #f0f9ff; }
+  .kv-vault-item.selected {
+    background: #ecfdf5;
+    border-left: 3px solid #10b981;
+    padding-left: 9px;
+  }
+  .kv-vault-name { font-weight: 600; color: #0f172a; }
+  .kv-vault-meta { font-size: 11.5px; color: #64748b; }
+  .kv-vault-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: .03em;
+  }
+  .kv-badge-default { background: #dbeafe; color: #1e40af; }
+  .kv-badge-new { background: #fef3c7; color: #92400e; }
+
+  .kv-probe-result {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+  .kv-probe-ok { background: #d1fae5; color: #065f46; }
+  .kv-probe-bad { background: #fee2e2; color: #991b1b; }
+  .kv-probe-loading { background: #e0f2fe; color: #075985; }
+
+  .kv-advanced-toggle {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: #475569;
+    cursor: pointer;
+    user-select: none;
+  }
+  .kv-advanced-toggle:hover { color: #0078d4; }
+  .kv-advanced {
+    display: none;
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, .65);
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+  }
+  .kv-advanced.open { display: block; }
+  .kv-advanced h4 { margin: 0 0 8px 0; font-size: 13px; color: #0f172a; }
+  .kv-advanced .kv-help {
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 4px 0 8px 0;
+  }
+  .kv-provision-status {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  .kv-whoami {
+    font-size: 11.5px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .kv-whoami strong { color: #334155; font-weight: 600; }
+</style>
+<div class="intro">
+  <h2 class="page-title">Onboard a new agent into Microsoft Purview + Agent 365</h2>
+  <p class="page-subtitle">Three short steps: tell us about your agent, verify setup, then click <strong>Onboard</strong>.</p>
+  <details class="intro-details">
+    <summary>What this does &amp; references</summary>
+    <p>We create the Entra app, grant Purview API permissions, generate a runnable wrapper, and
+       (optionally) register your agent with the Agent 365 SDK.</p>
+    <p>📚 References:
+       <a href="https://learn.microsoft.com/purview/dspm-for-ai" target="_blank" rel="noopener">DSPM for AI</a> ·
+       <a href="https://learn.microsoft.com/microsoft-agent-365/developer/get-started" target="_blank" rel="noopener">Agent 365 SDK</a> ·
+       <a href="https://learn.microsoft.com/entra/identity-platform/quickstart-register-app" target="_blank" rel="noopener">Entra app registration</a>
+    </p>
+  </details>
+  <p class="intro-actions">
+    📜 <a href="{{ url_for('history_page') }}">View previously onboarded agents</a>
+  </p>
+
+  {# Key Vault picker (v1.8) — replaces the v1 static pill. Renders a summary
+     of the currently-selected vault and lets the user change it to any vault
+     their az identity can see, OR provision a new one inline (advanced). #}
+  <div id="kvPicker"
+       class="kv-picker {% if not kv_configured and not kv_default_vault %}kv-picker-warn{% endif %}"
+       data-default-vault="{{ kv_default_vault|e }}">
+    <div class="kv-picker-header">
+      <div class="kv-picker-title">
+        <span class="kv-icon" aria-hidden="true">🔒</span>
+        <span>Secrets stored in Azure Key Vault</span>
+      </div>
+      <div>
+        <button type="button" class="btn-link" id="kvPickerToggle">Change vault</button>
+      </div>
+    </div>
+    <div class="kv-picker-summary" id="kvPickerSummary">
+      {% if kv_default_vault %}
+        Using <code id="kvSelectedDisplay">{{ kv_default_vault }}</code>
+        <span class="kv-vault-badge kv-badge-default">default</span>
+        · all sensitive values land in
+        <code>https://{{ kv_default_vault|lower }}.vault.azure.net/</code>.
+        Generated <code>.env</code> files only contain <code>@KV:</code> references.
+      {% else %}
+        <strong>No default vault configured.</strong>
+        Click <strong>Change vault</strong> to pick one from your Azure subscriptions
+        or provision a new one.
+      {% endif %}
+    </div>
+
+    <div class="kv-picker-body" id="kvPickerBody" aria-hidden="true">
+      <div class="kv-whoami" id="kvWhoami">Loading active Azure identity…</div>
+
+      <div class="kv-row">
+        <label for="kvSubscription">Subscription</label>
+        <select id="kvSubscription"><option>Loading…</option></select>
+        <button type="button" class="btn-link" id="kvRefresh" title="Re-fetch from Azure">↻ Refresh</button>
+      </div>
+
+      <div class="kv-row">
+        <label>Vault</label>
+        <div style="flex:1; min-width: 250px;">
+          <div class="kv-vault-list" id="kvVaultList">
+            <div style="padding:14px; color:#64748b; font-size:12px;">
+              Select a subscription to see vaults you can access.
+            </div>
+          </div>
+          <div id="kvProbeResult"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <button type="button" class="btn-primary" id="kvUseSelected" disabled>Use selected vault</button>
+        <button type="button" class="btn-link" id="kvCancel" style="margin-left:6px;">Cancel</button>
+      </div>
+
+      {# ─── Advanced: provision a new vault ───────────────────────────── #}
+      <div class="kv-advanced-toggle" id="kvAdvancedToggle">▸ Provision a new Key Vault (advanced)</div>
+      <div class="kv-advanced" id="kvAdvanced" aria-hidden="true">
+        <h4>Provision a new Key Vault</h4>
+        <div class="kv-help">
+          Creates a new vault in the selected subscription, in RBAC mode, with soft-delete on.
+          Tenant is derived from your active <code>az login</code>. After provisioning, the
+          onboarder will try to grant you <strong>Key Vault Secrets Officer</strong> automatically
+          (requires <em>User Access Administrator</em> or <em>Owner</em> on the resource group).
+          Provisioning takes 1–3 minutes — leave this tab open.
+        </div>
+        <div class="kv-row">
+          <label for="kvNewName">Vault name</label>
+          <input type="text" id="kvNewName" placeholder="3–24 chars, letters/digits/hyphens" maxlength="24">
+        </div>
+        <div class="kv-row">
+          <label for="kvNewRg">Resource group</label>
+          <select id="kvNewRg"><option>(pick subscription first)</option></select>
+        </div>
+        <div class="kv-row">
+          <label for="kvNewLocation">Location</label>
+          <select id="kvNewLocation"><option>(pick subscription first)</option></select>
+        </div>
+        <div>
+          <button type="button" class="btn-primary" id="kvProvisionGo">Provision new vault</button>
+        </div>
+        <div class="kv-provision-status" id="kvProvisionStatus" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Login modal stays at page scope so it overlays everything. The Identity card
+   itself has been moved INSIDE Step 1 so it lives in the wizard flow. #}
+
+<!-- Login modal -->
+<div id="loginModal" class="modal-bg" style="display:none">
+  <div class="modal-card">
+    <h3 style="margin-top:0">Sign in with az login</h3>
+    <p class="help">
+      A browser window will open for you to sign in. The onboarder will wait
+      until you complete sign-in (or up to 5 minutes), then refresh the
+      account list automatically.
+    </p>
+    <div class="field">
+      <label for="loginTenant">Tenant (optional)</label>
+      <input id="loginTenant" type="text" placeholder="contoso.onmicrosoft.com or tenant GUID">
+      <div class="help">Leave blank to use your home tenant.</div>
+    </div>
+    <div id="loginStatus" class="muted" style="font-size:12.5px;margin:8px 0;min-height:18px"></div>
+    <div class="actions" style="border-top:none;padding-top:0">
+      <button type="button" class="primary" id="loginStartBtn" onclick="startLogin()">Start sign-in</button>
+      <button type="button" class="primary" style="background:#475569" onclick="closeLoginModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stepper -->
+<div class="stepper">
+  <div class="stepper-item active" data-step="1"><span class="stepper-num">1</span> Agent details</div>
+  <div class="stepper-sep"></div>
+  <div class="stepper-item" data-step="2"><span class="stepper-num">2</span> Verify setup</div>
+  <div class="stepper-sep"></div>
+  <div class="stepper-item" data-step="3"><span class="stepper-num">3</span> Review &amp; deploy</div>
+</div>
+
+<form method="post" action="{{ url_for('submit') }}" autocomplete="off" id="wizForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {# v1.8 multi-vault picker: hidden field driven by JS, defaults to launcher
+     default vault. JS in the IIFE at the bottom keeps it in sync with the
+     picker UI in the intro section. #}
+  <input type="hidden" name="kv_vault_name" id="kvVaultName" value="{{ kv_default_vault|e }}">
+  {# These two are now visible editable inputs in the Identity card at the top:
+       name="tenant_id" (visible, also mirrored into the hidden acting_as_tenant_id below)
+       name="acting_as_user_name" (visible)
+       name="acting_as_subscription_id" (visible)
+     Only mirrors/echo fields remain hidden. #}
+  <input type="hidden" name="acting_as_tenant_id" id="actingAsTenantId" value="">
+  <input type="hidden" name="acting_as_tenant_domain" id="actingAsTenantDomain" value="">
+  <input type="hidden" name="acting_as_confirm" id="actingAsConfirm" value="">
+
+  <!-- ============================================================ STEP 1 -->
+  <div class="wizard-step active" data-step="1">
+    {# v1.2 — Identity moved into Step 1 (was a separate hero card above the stepper). #}
+    <section class="card" id="identityCard" style="border-left:4px solid #0078d4">
+      <h3 style="margin-top:0">🔐 Identity to onboard as</h3>
+      <details class="help-disclosure">
+        <summary>Why we ask for this</summary>
+        <p class="help">
+          The onboarding workflow will create real Entra and Purview resources as
+          whoever your <code>az</code> CLI is signed in as. <strong>Type the
+          identity you expect</strong> — the server re-checks it against
+          <code>az account show</code> at submit time and rejects any mismatch.
+          Use the buttons below if you'd rather pick from your already-signed-in
+          accounts.
+        </p>
+      </details>
+
+      <div class="row">
+        <div class="field">
+          <label for="tenant_id">Entra tenant ID <span class="hint">(GUID, required)</span></label>
+          <input id="tenant_id" name="tenant_id" type="text"
+                 placeholder="00000000-0000-0000-0000-000000000000"
+                 autocomplete="off" required>
+          <div class="help">Must match the tenant your <code>az</code> CLI is signed in to.</div>
+        </div>
+        <div class="field">
+          <label for="actingAsUpn">Acting-as UPN <span class="hint">(required)</span></label>
+          <input id="actingAsUpn" name="acting_as_user_name" type="text"
+                 placeholder="you@contoso.com"
+                 autocomplete="off" required>
+          <div class="help">The user that will own the Entra app you're about to create.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field" style="flex:2">
+          <label for="actingAsSubscriptionInput">Subscription ID <span class="hint">(optional — leave blank for directory-only)</span></label>
+          <input id="actingAsSubscriptionInput" name="acting_as_subscription_id" type="text"
+                 placeholder="00000000-0000-0000-0000-000000000000"
+                 autocomplete="off">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="primary" style="background:#475569" onclick="loadAccounts()">📋 Load my az accounts</button>
+        <button type="button" class="primary" style="background:#0078d4" onclick="openLoginModal()">🔑 Sign in with az login</button>
+        <span id="acctStatus" class="muted" style="font-size:12.5px"></span>
+      </div>
+
+      {# Lazy-loaded picker container — populated only when "Load accounts" is clicked. #}
+      <div id="lazyPicker" style="margin-top:14px"></div>
+    </section>
+
+    <section class="card">
+      <h3><span class="num">1</span> Tell us about your agent</h3>
+      <p class="help help-tight" style="margin-bottom:14px">
+        Name + how to reach the underlying agent. The minimum to run a meaningful
+        prerequisite check next.
+      </p>
+
+      <div class="row">
+        <div class="field">
+          <label for="agent_display_name">Display name <span class="hint">(shown in Purview &amp; MAC)</span></label>
+          <input id="agent_display_name" name="agent_display_name" type="text"
+                 placeholder="e.g. Financial Advisor" required
+                 oninput="suggestSlug(this.value)">
+        </div>
+        <div class="field">
+          <label for="agent_slug">Slug <span class="hint">(folder + Entra name)</span></label>
+          <input id="agent_slug" name="agent_slug" type="text"
+                 placeholder="financial-advisor" pattern="[a-z0-9-]+">
+          <div id="slugStatus" class="help" style="margin-top:6px;min-height:18px"></div>
+        </div>
+      </div>
+
+      {# Shown only when /api/check-slug reports a conflict (or /submit returns 409). #}
+      <div id="overwriteCard" class="alert warn" style="display:none">
+        <strong>This agent name already exists.</strong>
+        <span id="overwriteDetail"></span>
+        <label class="toggle" style="margin-top:8px">
+          <input type="checkbox" id="overwriteCheckbox" name="overwrite_existing" value="on">
+          <span>Overwrite previous run (existing folder will be archived as
+                <code>&lt;slug&gt;.archived-&lt;timestamp&gt;/</code>;
+                the Entra app is <strong>not</strong> deleted).</span>
+        </label>
+      </div>
+
+      <div class="field">
+        <label for="agent_description">Short description</label>
+        <textarea id="agent_description" name="agent_description" rows="2"
+                  placeholder="What does this agent do? (1-2 sentences)"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Provider <span class="hint">(what's behind the agent)</span></label>
+        <div class="providers">
+          <label class="choice">
+            <input type="radio" name="provider" value="vertex" checked onchange="showProvider('vertex')">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#4285F4" d="M22.5 12.27c0-.78-.07-1.53-.2-2.27H12v4.51h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.22-4.74 3.22-8.32z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.85 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.67-2.84z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.67 2.84C6.71 7.31 9.14 5.38 12 5.38z"/>
+              </svg>
+            </span>
+            <span class="meta"><span class="name">Google Vertex AI</span><br><span class="desc">Reasoning Engine on GCP</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="provider" value="bedrock" onchange="showProvider('bedrock')">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <text x="12" y="11.5" text-anchor="middle" fill="#232F3E" font-family="Arial, sans-serif" font-size="7" font-weight="900" letter-spacing="-0.3">aws</text>
+                <path d="M3.5 15.3 Q12 19.8 20.5 15.3" stroke="#FF9900" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+                <path d="M18.2 14.4 L20.5 15.3 L19.7 17.6" stroke="#FF9900" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="meta"><span class="name">AWS Bedrock</span><br><span class="desc">Bedrock Agents via InvokeAgent</span></span>
+          </label>
+          <label class="choice coming-soon" title="Coming soon">
+            <input type="radio" name="provider" value="azure_openai" disabled aria-disabled="true">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="azGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#0078D4"/>
+                    <stop offset="100%" stop-color="#5EA0EF"/>
+                  </linearGradient>
+                </defs>
+                <path fill="url(#azGrad)" d="M9.1 3.5h6L23 21h-7.4l-1-2.8H9l-1.4 2.8H1L9.1 3.5zm.6 11.8h4.6L12 8 9.7 15.3z"/>
+              </svg>
+            </span>
+            <span class="meta">
+              <span class="name">Azure OpenAI</span>
+              <span class="coming-soon-badge">Coming soon</span>
+              <br><span class="desc">Deployment in Azure</span>
+            </span>
+          </label>
+          <label class="choice coming-soon" title="Coming soon">
+            <input type="radio" name="provider" value="openai" disabled aria-disabled="true">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#10A37F" d="M22.28 9.82a5.99 5.99 0 0 0-.52-4.91A6.05 6.05 0 0 0 15.26 2 6.07 6.07 0 0 0 4.98 4.18a5.98 5.98 0 0 0-4 2.9 6.05 6.05 0 0 0 .74 7.1A5.98 5.98 0 0 0 2.24 19.1a6.05 6.05 0 0 0 6.51 2.9A5.98 5.98 0 0 0 13.26 24a6.06 6.06 0 0 0 5.77-4.21 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.07zm-9.03 12.61c-1.06 0-2.08-.37-2.88-1.04l.14-.08 4.78-2.76a.79.79 0 0 0 .4-.68v-6.74l2.02 1.17a.07.07 0 0 1 .04.05v5.58a4.5 4.5 0 0 1-4.5 4.5zM3.6 18.3a4.47 4.47 0 0 1-.53-3.02l.14.09 4.78 2.76a.77.77 0 0 0 .78 0l5.85-3.37v2.33a.08.08 0 0 1-.03.06l-4.83 2.79A4.5 4.5 0 0 1 3.6 18.3zM2.34 7.9a4.49 4.49 0 0 1 2.37-1.98v5.7c0 .28.15.54.39.68l5.81 3.36-2.02 1.17a.08.08 0 0 1-.07 0L3.99 14.04A4.5 4.5 0 0 1 2.34 7.87zm16.6 3.86l-5.84-3.39 2.02-1.16a.08.08 0 0 1 .07 0l4.83 2.79a4.49 4.49 0 0 1-.68 8.11v-5.68a.79.79 0 0 0-.4-.67zm2.01-3.03l-.14-.08-4.78-2.78a.78.78 0 0 0-.78 0L9.41 9.24V6.9a.07.07 0 0 1 .03-.06l4.83-2.79a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.14l-2.02-1.17a.08.08 0 0 1-.04-.05V6.07a4.5 4.5 0 0 1 7.37-3.45l-.14.08-4.78 2.76a.79.79 0 0 0-.4.68zm1.1-2.37l2.6-1.5 2.61 1.5v3l-2.6 1.5-2.61-1.5z"/>
+              </svg>
+            </span>
+            <span class="meta">
+              <span class="name">OpenAI (public)</span>
+              <span class="coming-soon-badge">Coming soon</span>
+              <br><span class="desc">api.openai.com</span>
+            </span>
+          </label>
+          <label class="choice coming-soon" title="Coming soon">
+            <input type="radio" name="provider" value="anthropic" disabled aria-disabled="true">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="5" fill="#D97757"/>
+                <path fill="#FFFFFF" d="M13.5 5.5h-2.9L6.2 18.5h2.95l.92-2.95h4.66l.94 2.95h2.95L13.5 5.5zm-3.05 7.55 1.6-5.1 1.62 5.1h-3.22z"/>
+              </svg>
+            </span>
+            <span class="meta">
+              <span class="name">Anthropic Claude</span>
+              <span class="coming-soon-badge">Coming soon</span>
+              <br><span class="desc">Direct api.anthropic.com</span>
+            </span>
+          </label>
+          <label class="choice coming-soon" title="Coming soon">
+            <input type="radio" name="provider" value="custom" disabled aria-disabled="true">
+            <span class="prov-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="5" fill="#5C6773"/>
+                <path fill="#FFFFFF" d="M9.1 7.6 5 12l4.1 4.4 1.4-1.3L7.8 12l2.7-3.1zm5.8 0-1.4 1.3L16.2 12l-2.7 3.1 1.4 1.3L19 12z"/>
+              </svg>
+            </span>
+            <span class="meta">
+              <span class="name">Custom HTTP</span>
+              <span class="coming-soon-badge">Coming soon</span>
+              <br><span class="desc">Anything else — your endpoint</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Vertex AI -->
+      <div class="provider-fields active" data-provider="vertex">
+        {% if defaults.vertex_source_slug %}
+        <div class="help prefill-banner" id="vertex-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.vertex_source_name or defaults.vertex_source_slug }}</strong>
+          (slug <code>{{ defaults.vertex_source_slug }}</code>).
+          Edit any field to use different values, or
+          <a href="#" class="prefill-clear"
+             data-clear-fields="vertex_project,vertex_location,vertex_resource_name,vertex_adc_path"
+             data-banner-id="vertex-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+        <div class="row">
+          <div class="field"><label for="vertex_project">GCP project ID</label>
+            <input id="vertex_project" name="vertex_project" type="text"
+                   placeholder="active-gasket-361109"
+                   pattern="^[a-z][-a-z0-9]{4,28}[a-z0-9]$"
+                   title="6-30 chars, lowercase letters/digits/hyphens, must start with a letter, cannot end with hyphen"
+                   value="{{ defaults.vertex_project or '' }}">
+            <div class="help">Lowercase letters/digits/hyphens only. <strong>Not</strong> the agent's display name. Find it at
+              <a href="https://console.cloud.google.com/iam-admin/settings" target="_blank" rel="noopener">GCP IAM &amp; Admin → Settings</a>.</div>
+          </div>
+          <div class="field"><label for="vertex_location">Location</label>
+            <input id="vertex_location" name="vertex_location" type="text"
+                   placeholder="us-central1"
+                   value="{{ defaults.vertex_location or '' }}">
+          </div>
+        </div>
+        <div class="field"><label for="vertex_resource_name">Reasoning engine resource name</label>
+          <input id="vertex_resource_name" name="vertex_resource_name" type="text"
+                 placeholder="projects/.../locations/.../reasoningEngines/..."
+                 value="{{ defaults.vertex_resource_name or '' }}">
+          <div class="help">
+            Copy from
+            <a href="https://console.cloud.google.com/vertex-ai/agents/list" target="_blank" rel="noopener">GCP Console → Vertex AI → Agent Builder</a>
+            → click your agent → <em>Resource name</em>. Format:
+            <code>projects/&lt;NUMBER&gt;/locations/&lt;REGION&gt;/reasoningEngines/&lt;ID&gt;</code>.
+            ⚠️ Each agent has its own unique <code>reasoningEngines/&lt;ID&gt;</code> — pasting the same ID for two
+            different wrappers makes both call the same underlying agent.
+          </div>
+        </div>
+        <div class="field"><label for="vertex_adc_path">Application Default Credentials path <span class="hint">(optional)</span></label>
+          <input id="vertex_adc_path" name="vertex_adc_path" type="text"
+                 placeholder="C:\Users\you\AppData\Roaming\gcloud\application_default_credentials.json"
+                 value="{{ defaults.vertex_adc_path or '' }}">
+          <div class="help">Leave blank if <code>gcloud auth application-default login</code> already wrote the default file.</div>
+        </div>
+      </div>
+
+      <!-- Azure OpenAI -->
+      <div class="provider-fields" data-provider="azure_openai">
+        {% if defaults.azure_openai_source_slug %}
+        <div class="help prefill-banner" id="azure_openai-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.azure_openai_source_name or defaults.azure_openai_source_slug }}</strong>
+          (slug <code>{{ defaults.azure_openai_source_slug }}</code>).
+          API key always stays blank — re-enter it.
+          <a href="#" class="prefill-clear"
+             data-clear-fields="azure_openai_endpoint,azure_openai_deployment,azure_openai_api_version"
+             data-banner-id="azure_openai-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+        <div class="field"><label for="azure_openai_endpoint">Endpoint</label>
+          <input id="azure_openai_endpoint" name="azure_openai_endpoint" type="text"
+                 placeholder="https://my-aoai.openai.azure.com/"
+                 value="{{ defaults.azure_openai_endpoint or '' }}">
+        </div>
+        <div class="row">
+          <div class="field"><label for="azure_openai_deployment">Deployment name</label>
+            <input id="azure_openai_deployment" name="azure_openai_deployment" type="text"
+                   placeholder="gpt-4o"
+                   value="{{ defaults.azure_openai_deployment or '' }}">
+          </div>
+          <div class="field"><label for="azure_openai_api_version">API version</label>
+            <input id="azure_openai_api_version" name="azure_openai_api_version" type="text"
+                   value="{{ defaults.azure_openai_api_version or '2024-08-01-preview' }}">
+          </div>
+        </div>
+        <div class="field"><label for="azure_openai_api_key">API key</label>
+          <input id="azure_openai_api_key" name="azure_openai_api_key" type="password" placeholder="••••••••">
+          <div class="help">Stored only in the generated <code>.env</code> file on this machine.</div>
+        </div>
+      </div>
+
+      <!-- OpenAI -->
+      <div class="provider-fields" data-provider="openai">
+        {% if defaults.openai_source_slug %}
+        <div class="help prefill-banner" id="openai-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.openai_source_name or defaults.openai_source_slug }}</strong>
+          (slug <code>{{ defaults.openai_source_slug }}</code>).
+          API key always stays blank — re-enter it.
+          <a href="#" class="prefill-clear"
+             data-clear-fields="openai_model"
+             data-banner-id="openai-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+        <div class="row">
+          <div class="field"><label for="openai_model">Model</label>
+            <input id="openai_model" name="openai_model" type="text"
+                   value="{{ defaults.openai_model or 'gpt-4o-mini' }}">
+          </div>
+          <div class="field"><label for="openai_api_key">API key</label>
+            <input id="openai_api_key" name="openai_api_key" type="password" placeholder="sk-…">
+          </div>
+        </div>
+      </div>
+
+      <!-- AWS Bedrock -->
+      <div class="provider-fields" data-provider="bedrock">
+        {% if defaults.bedrock_source_slug %}
+        <div class="help prefill-banner" id="bedrock-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.bedrock_source_name or defaults.bedrock_source_slug }}</strong>
+          (slug <code>{{ defaults.bedrock_source_slug }}</code>).
+          AWS access key &amp; secret always stay blank — re-enter them
+          (or leave blank to use the default AWS credential chain:
+          <code>~/.aws/credentials</code>, env vars, IAM role).
+          <a href="#" class="prefill-clear"
+             data-clear-fields="bedrock_region,bedrock_agent_id,bedrock_agent_alias_id"
+             data-banner-id="bedrock-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+
+        <p class="muted" style="margin:4px 0 12px;font-size:13px;">
+          🤖 Target: <strong>Deployed Bedrock Agent</strong> (InvokeAgent API).
+        </p>
+        {# Hidden — preserved so server keeps treating this provider as agent-mode. #}
+        <input type="hidden" name="bedrock_mode" value="agent">
+
+        <div class="row">
+          <div class="field" style="flex:1"><label for="bedrock_region">AWS region</label>
+            <input id="bedrock_region" name="bedrock_region" type="text"
+                   placeholder="us-east-1"
+                   value="{{ defaults.bedrock_region or 'us-east-1' }}">
+          </div>
+          <div class="field" style="flex:1"><label for="bedrock_agent_id">Bedrock Agent ID</label>
+            <input id="bedrock_agent_id" name="bedrock_agent_id" type="text"
+                   placeholder="AGENT1234ABCD"
+                   value="{{ defaults.bedrock_agent_id or '' }}">
+          </div>
+          <div class="field" style="flex:1"><label for="bedrock_agent_alias_id">Agent alias ID</label>
+            <input id="bedrock_agent_alias_id" name="bedrock_agent_alias_id" type="text"
+                   placeholder="TSTALIASID"
+                   value="{{ defaults.bedrock_agent_alias_id or '' }}">
+          </div>
+        </div>
+        <div class="help">
+          Find these in the Bedrock console → <em>Agents</em> → your agent → <em>Aliases</em>.
+          Use the alias ID (not the agent version number) — aliases let you promote new
+          versions without changing this wrapper's config.
+        </div>
+
+        <div class="row">
+          <div class="field"><label for="bedrock_access_key_id">AWS access key ID <span class="hint">(optional)</span></label>
+            <input id="bedrock_access_key_id" name="bedrock_access_key_id" type="text" placeholder="AKIA…">
+          </div>
+          <div class="field"><label for="bedrock_secret_access_key">AWS secret access key <span class="hint">(optional)</span></label>
+            <input id="bedrock_secret_access_key" name="bedrock_secret_access_key" type="password" placeholder="••••••••">
+          </div>
+        </div>
+        <div class="field"><label for="bedrock_session_token">AWS session token <span class="hint">(optional, STS only)</span></label>
+          <input id="bedrock_session_token" name="bedrock_session_token" type="password" placeholder="••••••••">
+          <div class="help">Leave the three credential fields blank to use the default AWS credential chain.</div>
+        </div>
+      </div>
+
+      <!-- Anthropic Claude (direct API) -->
+      <div class="provider-fields" data-provider="anthropic">
+        {% if defaults.anthropic_source_slug %}
+        <div class="help prefill-banner" id="anthropic-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.anthropic_source_name or defaults.anthropic_source_slug }}</strong>
+          (slug <code>{{ defaults.anthropic_source_slug }}</code>).
+          API key always stays blank — re-enter it.
+          <a href="#" class="prefill-clear"
+             data-clear-fields="anthropic_model,anthropic_base_url"
+             data-banner-id="anthropic-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+        <div class="row">
+          <div class="field"><label for="anthropic_model">Model</label>
+            <input id="anthropic_model" name="anthropic_model" type="text"
+                   placeholder="claude-3-5-sonnet-20241022"
+                   value="{{ defaults.anthropic_model or 'claude-3-5-sonnet-20241022' }}">
+          </div>
+          <div class="field"><label for="anthropic_api_key">API key</label>
+            <input id="anthropic_api_key" name="anthropic_api_key" type="password" placeholder="sk-ant-…">
+          </div>
+        </div>
+        <div class="field"><label for="anthropic_base_url">Base URL <span class="hint">(optional)</span></label>
+          <input id="anthropic_base_url" name="anthropic_base_url" type="text"
+                 placeholder="https://api.anthropic.com (default)"
+                 value="{{ defaults.anthropic_base_url or '' }}">
+          <div class="help">Override only if you're routing through a proxy (Helicone, Portkey, etc.).</div>
+        </div>
+      </div>
+
+      <!-- Custom HTTP -->
+      <div class="provider-fields" data-provider="custom">
+        {% if defaults.http_source_slug %}
+        <div class="help prefill-banner" id="http-prefill-banner">
+          Pre-filled from your last working agent
+          <strong>{{ defaults.http_source_name or defaults.http_source_slug }}</strong>
+          (slug <code>{{ defaults.http_source_slug }}</code>).
+          Authorization header always stays blank — re-enter it.
+          <a href="#" class="prefill-clear"
+             data-clear-fields="http_url,http_method,http_prompt_field,http_response_jsonpath"
+             data-banner-id="http-prefill-banner">clear and enter new ones</a>.
+        </div>
+        {% endif %}
+        <div class="row">
+          <div class="field" style="flex:2"><label for="http_url">Endpoint URL</label>
+            <input id="http_url" name="http_url" type="text"
+                   placeholder="https://my-agent.example.com/chat"
+                   value="{{ defaults.http_url or '' }}">
+          </div>
+          <div class="field"><label for="http_method">Method</label>
+            <select id="http_method" name="http_method">
+              {% set _m = defaults.http_method or 'POST' %}
+              <option {% if _m == 'POST' %}selected{% endif %}>POST</option>
+              <option {% if _m == 'GET' %}selected{% endif %}>GET</option>
+              <option {% if _m == 'PUT' %}selected{% endif %}>PUT</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="http_prompt_field">Request prompt field</label>
+            <input id="http_prompt_field" name="http_prompt_field" type="text"
+                   value="{{ defaults.http_prompt_field or 'prompt' }}">
+            <div class="help">JSON body key that holds the user prompt.</div>
+          </div>
+          <div class="field"><label for="http_response_jsonpath">Response JSON path</label>
+            <input id="http_response_jsonpath" name="http_response_jsonpath" type="text"
+                   value="{{ defaults.http_response_jsonpath or 'response' }}">
+            <div class="help">Dotted path to the answer (e.g. <code>choices.0.message.content</code>).</div>
+          </div>
+        </div>
+        <div class="field"><label for="http_auth_header">Authorization header <span class="hint">(optional)</span></label>
+          <input id="http_auth_header" name="http_auth_header" type="text" placeholder="Bearer ey...">
+        </div>
+      </div>
+
+    </section>
+
+    <div class="actions">
+      <span class="muted">Step 1 of 3</span>
+      <button type="button" class="primary" onclick="goStep(2)">Next: Verify setup →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ STEP 2 -->
+  <div class="wizard-step" data-step="2">
+    <section class="card">
+      <h3><span class="num">2</span> Verify setup</h3>
+      <p class="help help-tight" style="margin-bottom:14px">
+        Verifying your machine, tenant, Key Vault, and the agent endpoint you provided.
+        <strong>This runs locally — nothing is created yet.</strong>
+      </p>
+      <div id="diagSummary"></div>
+      <div id="diagResults"><p class="muted">Running checks…</p></div>
+      <div style="margin-top:14px">
+        <button type="button" class="primary" style="background:#475569" onclick="runStepDiagnostics()">
+          🔄 Re-run checks
+        </button>
+        <a href="{{ url_for('diagnostics_page') }}" target="_blank" rel="noopener" class="muted" style="margin-left:12px">
+          Open full diagnostics page in a new tab →
+        </a>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="primary" style="background:#64748b" onclick="goStep(1)">← Back</button>
+      <span class="muted" id="stepHint">Step 2 of 3</span>
+      <button type="button" id="btnContinueAfterDiag" class="primary" disabled onclick="goStep(3)">
+        Continue: Review &amp; deploy →
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================ STEP 3 -->
+  <div class="wizard-step" data-step="3">
+    <section class="card">
+      <h3><span class="num">3a</span> Monitoring</h3>
+
+      <input type="hidden" name="purview_dlp" value="on">
+      <input type="hidden" name="purview_audit" value="on">
+
+      <label class="toggle">
+        <input type="checkbox" checked disabled>
+        <span><strong>Purview DLP + classifier</strong> — always on</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" checked disabled>
+        <span><strong>Purview audit log</strong> — always on (powers DSPM for AI)</span>
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" name="a365_blueprint" {% if defaults.a365_blueprint %}checked{% endif %}>
+        <span><strong>Agent 365 blueprint</strong> — register agent identity in M365 admin center
+          <span class="hint">(requires <code>dotnet</code> + <code>a365</code> CLI + browser consent)</span>
+        </span>
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" name="a365_observability" {% if defaults.a365_observability %}checked{% endif %}>
+        <span><strong>Agent 365 Observability</strong> — push OTel spans to ingestion endpoint
+          <span class="hint">(currently 1st-party only; custom agents fall back to console)</span>
+        </span>
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" name="force_audit" checked>
+        <span><strong>Force-audit mode</strong> — record an activity event even when a prompt is blocked</span>
+      </label>
+
+      <div class="help" style="margin-top:10px">
+        📖 Learn more about
+        <a href="https://learn.microsoft.com/purview/dspm-for-ai" target="_blank" rel="noopener">DSPM for AI</a>
+        and
+        <a href="https://learn.microsoft.com/microsoft-agent-365/developer/observability" target="_blank" rel="noopener">Agent 365 Observability</a>.
+      </div>
+    </section>
+
+    <section class="card">
+      <h3><span class="num">3b</span> Generated server</h3>
+      <div class="row">
+        <div class="field"><label for="server_host">Bind host</label>
+          <input id="server_host" name="server_host" type="text" value="{{ defaults.host }}">
+        </div>
+        <div class="field"><label for="server_port">Bind port</label>
+          <input id="server_port" name="server_port" type="text" value="{{ defaults.port }}"
+                 oninput="schedulePortCheck()">
+          <div id="portStatus" class="help" style="margin-top:6px;min-height:18px"></div>
+        </div>
+      </div>
+      <div class="help">
+        The generated server uses Microsoft Entra OAuth to sign in users before
+        chatting with the agent.
+      </div>
+    </section>
+
+    <section class="card">
+      <h3><span class="num">✓</span> Review &amp; onboard</h3>
+      <table class="result-table">
+        <tr><th>Agent</th><td id="rvAgent">—</td></tr>
+        <tr><th>Provider</th><td id="rvProvider">—</td></tr>
+        <tr><th>Tenant</th><td id="rvTenant">—</td></tr>
+        <tr><th>Prereq status</th><td id="rvPrereq">—</td></tr>
+      </table>
+    </section>
+
+    <section class="card" id="confirmCard" style="border-left:4px solid #d97706">
+      <h3 style="margin-top:0"><span class="num">!</span> Final confirmation</h3>
+      <p id="confirmText" class="help" style="margin-bottom:10px">—</p>
+      <label class="toggle" id="confirmToggle" style="opacity:.5;pointer-events:none">
+        <input type="checkbox" id="confirmCheckbox" disabled>
+        <span><strong>I confirm</strong> the identity and resources above are correct.
+          I understand this will create real Entra and Purview resources in the
+          tenant shown.</span>
+      </label>
+      <div id="confirmHint" class="help" style="margin-top:8px;color:#dc2626;display:none">
+        ⚠️ Fill in the Tenant ID and Acting-as UPN at the top of the form in
+        Step&nbsp;1, then return here to confirm.
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="primary" style="background:#64748b" onclick="goStep(2)">← Back</button>
+      <span class="muted">Step 3 of 3 — ready to go</span>
+      <button type="submit" id="btnSubmit" class="primary" disabled style="background:#9ca3af">▶ Onboard agent</button>
+    </div>
+  </div>
+
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script>
+// CSRF token + helpers shared by all AJAX
+var CSRF_TOKEN = {{ csrf_token | tojson }};
+var CSRF_HEADER = {{ csrf_header | tojson }};
+
+function csrfHeaders(extra){
+  var h = Object.assign({}, extra || {});
+  h[CSRF_HEADER] = CSRF_TOKEN;
+  return h;
+}
+
+function showProvider(p){
+  document.querySelectorAll('.provider-fields').forEach(function(el){
+    el.classList.toggle('active', el.dataset.provider === p);
+  });
+  invalidateConfirmation();
+}
+
+// Bedrock target is now hard-coded to "agent" (the Foundation-model Converse
+// path is hidden behind a "Coming soon" treatment elsewhere). The hidden
+// <input name="bedrock_mode" value="agent"> in the Bedrock provider-fields
+// block keeps the server-side workflow happy.
+function updateBedrockMode(){
+  // No-op kept for backwards compat with any cached HTML / external callers.
+  invalidateConfirmation();
+}
+// Initialize on load.
+document.addEventListener('DOMContentLoaded', updateBedrockMode);
+function suggestSlug(name){
+  var el = document.getElementById('agent_slug');
+  if (el.dataset.touched === '1') {
+    // Slug was hand-edited; still re-check after display name changes.
+    scheduleSlugCheck();
+    return;
+  }
+  el.value = (name || '').toLowerCase()
+    .replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0, 48);
+  scheduleSlugCheck();
+}
+document.getElementById('agent_slug').addEventListener('input', function(){
+  this.dataset.touched='1';
+  scheduleSlugCheck();
+});
+document.getElementById('agent_display_name').addEventListener('input', invalidateConfirmation);
+
+// ----- Live port + slug checks (v1.3) -----
+var _portTimer = null, _slugTimer = null;
+function schedulePortCheck(){
+  clearTimeout(_portTimer);
+  _portTimer = setTimeout(runPortCheck, 350);
+}
+function scheduleSlugCheck(){
+  clearTimeout(_slugTimer);
+  _slugTimer = setTimeout(runSlugCheck, 350);
+}
+
+function runPortCheck(){
+  var raw = (document.getElementById('server_port').value || '').trim();
+  var status = document.getElementById('portStatus');
+  if (!raw) { status.innerHTML = ''; return; }
+  var n = parseInt(raw, 10);
+  if (isNaN(n) || n < 1 || n > 65535) {
+    status.innerHTML = '<span style="color:#dc2626">⚠ Port must be a number in 1..65535.</span>';
+    return;
+  }
+  fetch("{{ url_for('port_check') }}?port=" + encodeURIComponent(n) + "&host=127.0.0.1", {headers: csrfHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.ok) {
+        status.innerHTML = '<span style="color:#dc2626">⚠ ' + (j.error || 'check failed') + '</span>';
+        return;
+      }
+      if (j.available) {
+        status.innerHTML = '<span style="color:#166534">✓ Port ' + j.port + ' is free.</span>';
+      } else {
+        var suggestBtn = '';
+        if (j.suggested) {
+          suggestBtn = ' <button type="button" class="primary" style="padding:2px 10px;font-size:11.5px;background:#0078d4" '
+                     + 'onclick="applyPort(' + j.suggested + ')">Use ' + j.suggested + '</button>';
+        }
+        status.innerHTML = '<span style="color:#92400e">⚠ Port ' + j.port + ' is in use'
+                         + (j.suggested ? ' (next free: ' + j.suggested + ')' : '')
+                         + '.</span>' + suggestBtn;
+      }
+    })
+    .catch(function(e){
+      status.innerHTML = '<span style="color:#6b7280">(port check unavailable: ' + (e&&e.message?e.message:e) + ')</span>';
+    });
+}
+function applyPort(p){
+  document.getElementById('server_port').value = String(p);
+  runPortCheck();
+}
+
+function runSlugCheck(){
+  var raw = (document.getElementById('agent_slug').value || '').trim();
+  var status = document.getElementById('slugStatus');
+  var card = document.getElementById('overwriteCard');
+  var detail = document.getElementById('overwriteDetail');
+  var cb = document.getElementById('overwriteCheckbox');
+  if (!raw) {
+    status.innerHTML = '';
+    card.style.display = 'none';
+    cb.checked = false;
+    return;
+  }
+  fetch("{{ url_for('check_slug') }}?slug=" + encodeURIComponent(raw), {headers: csrfHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.ok) {
+        status.innerHTML = '<span style="color:#dc2626">⚠ ' + (j.error || 'check failed') + '</span>';
+        card.style.display = 'none';
+        return;
+      }
+      if (!j.exists) {
+        status.innerHTML = '<span style="color:#166534">✓ Slug is free.</span>';
+        card.style.display = 'none';
+        cb.checked = false;
+        return;
+      }
+      status.innerHTML = '<span style="color:#92400e">⚠ A previous run with this slug exists.</span>';
+      var rep = j.report || {};
+      var bits = [];
+      if (rep.display_name) bits.push('name <code>' + rep.display_name + '</code>');
+      if (rep.provider) bits.push('provider <code>' + rep.provider + '</code>');
+      if (rep.generated_at) bits.push('created <code>' + rep.generated_at + '</code>');
+      detail.innerHTML = bits.length ? (' (' + bits.join(', ') + ')') : '';
+      card.style.display = 'block';
+    })
+    .catch(function(){ status.innerHTML = ''; card.style.display = 'none'; });
+}
+
+// Intercept the final submit so 409 (duplicate slug, port collision) errors
+// from /submit are rendered inline rather than as raw JSON in the browser.
+document.addEventListener('DOMContentLoaded', function(){
+  var form = document.getElementById('wizForm');
+  var submitBtn = document.getElementById('btnSubmit');
+  if (!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Submitting…'; }
+    var fd = new FormData(form);
+    fetch(form.action, {method: 'POST', body: fd, headers: csrfHeaders(), redirect: 'follow'})
+      .then(function(r){
+        // Successful submit returns a 302 redirect to /progress/<id>; fetch
+        // follows it, so r.redirected === true and r.url is the destination.
+        if (r.redirected) { window.location.href = r.url; return null; }
+        if (r.ok) { window.location.href = r.url; return null; }
+        return r.json().then(function(j){ return {status: r.status, body: j}; });
+      })
+      .then(function(out){
+        if (!out) return;
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '▶ Onboard agent'; }
+        if (out.body && out.body.duplicate_slug) {
+          var card = document.getElementById('overwriteCard');
+          var detail = document.getElementById('overwriteDetail');
+          card.style.display = 'block';
+          var existing = out.body.existing || {};
+          var bits = [];
+          if (existing.display_name) bits.push('name <code>' + existing.display_name + '</code>');
+          if (existing.generated_at) bits.push('created <code>' + existing.generated_at + '</code>');
+          detail.innerHTML = bits.length ? (' (' + bits.join(', ') + ')') : '';
+          window.scrollTo({top: card.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth'});
+        }
+        if (out.body && out.body.suggested) {
+          document.getElementById('server_port').focus();
+          runPortCheck();
+        }
+        alert((out.body && out.body.error) || ('Submit failed with HTTP ' + out.status));
+      })
+      .catch(function(err){
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '▶ Onboard agent'; }
+        alert('Network error: ' + (err && err.message ? err.message : err));
+      });
+  });
+  // Run an initial port check on page load so the user sees green/yellow immediately.
+  setTimeout(runPortCheck, 50);
+});
+
+// ----- Identity (top of form) -----
+// Three visible editable inputs (tenant_id, acting_as_user_name, acting_as_subscription_id).
+// Hidden mirrors: actingAsTenantId (kept in sync with #tenant_id), actingAsTenantDomain
+// (populated only when user clicks a row in the lazy picker), actingAsConfirm.
+
+function mirrorTenantToActingAs(){
+  var v = (document.getElementById('tenant_id').value || '').trim();
+  document.getElementById('actingAsTenantId').value = v;
+  // If the user starts typing a tenant the previous picker-chosen domain no
+  // longer applies — clear it so confirmation text doesn't mislead.
+  document.getElementById('actingAsTenantDomain').value = '';
+  invalidateConfirmation();
+}
+
+function clearPickerStatus(msg){
+  var s = document.getElementById('acctStatus');
+  if (s) s.textContent = msg || '';
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
+}
+
+// Fill the three visible inputs (and the hidden tenant_domain mirror) from a
+// picker row. Also fires the standard invalidateConfirmation hook.
+function applyAccountToForm(acct, opts){
+  opts = opts || {};
+  document.getElementById('tenant_id').value = acct.tenant_id || '';
+  document.getElementById('actingAsUpn').value = acct.user_name || '';
+  document.getElementById('actingAsSubscriptionInput').value = acct.subscription_id || '';
+  document.getElementById('actingAsTenantId').value = acct.tenant_id || '';
+  document.getElementById('actingAsTenantDomain').value = acct.tenant_default_domain || '';
+  invalidateConfirmation();
+  if (opts.switchAz && acct.subscription_id){
+    switchAzContext(acct.subscription_id);
+  }
+}
+
+// POST to /api/accounts/select to actually mutate the global az context.
+// Used only when the user explicitly picks a row and confirms.
+function switchAzContext(subId){
+  clearPickerStatus('Switching active az context to ' + subId + '…');
+  fetch("{{ url_for('accounts_select') }}", {
+    method: 'POST',
+    headers: csrfHeaders({'Content-Type':'application/json'}),
+    body: JSON.stringify({subscription_id: subId}),
+  })
+  .then(function(r){ return r.json().then(function(j){ return {status:r.status, body:j}; }); })
+  .then(function(res){
+    if (res.status !== 200 || res.body.ok === false){
+      clearPickerStatus('⚠️ ' + (res.body.error || 'failed to switch az context'));
+      return;
+    }
+    clearPickerStatus('✓ Active az context: ' + (res.body.active_user_name || '?') +
+                      ' / tenant ' + (res.body.active_tenant_id || '?'));
+  })
+  .catch(function(e){ clearPickerStatus('⚠️ ' + (e && e.message || e)); });
+}
+
+function renderLazyPicker(payload){
+  var box = document.getElementById('lazyPicker');
+  if (!payload.az_installed){
+    box.innerHTML = '<div class="alert err" style="margin-top:0">' +
+      '❌ Azure CLI not detected: ' + escapeHtml(payload.error || 'az CLI is not installed.') +
+      ' &mdash; install from <a href="https://aka.ms/installazurecli" target="_blank" rel="noopener">aka.ms/installazurecli</a>.</div>';
+    return;
+  }
+  if (!payload.accounts || payload.accounts.length === 0){
+    box.innerHTML = '<div class="alert warn" style="margin-top:0">⚠️ No accounts found via <code>az account list</code>. ' +
+      'Click <strong>🔑 Sign in with az login</strong> above to add one.</div>';
+    return;
+  }
+  var activeSub = payload.active_subscription_id || '';
+  var html = '<div class="help" style="margin:4px 0 6px">' +
+    '<strong>' + payload.accounts.length + '</strong> account(s) detected. ' +
+    'Click a row to fill the form above. The row marked <em>active</em> is what ' +
+    '<code>az account show</code> currently reports.</div>' +
+    '<div style="margin:6px 0">' +
+    '<input type="text" id="acctFilter" placeholder="🔎 filter by tenant, subscription, or user…" ' +
+    'oninput="filterAccounts()" autocomplete="off"></div>' +
+    '<div id="acctList" class="acct-list" style="max-height:340px;overflow-y:auto">';
+  payload.accounts.forEach(function(a){
+    var isActive = (a.subscription_id && a.subscription_id === activeSub) ||
+                   (!a.subscription_id && a.tenant_id === payload.active_tenant_id && !activeSub);
+    var search = ((a.user_name || '') + ' ' + (a.tenant_id || '') + ' ' +
+                  (a.tenant_default_domain || '') + ' ' + (a.subscription_id || '') + ' ' +
+                  (a.subscription_name || '')).toLowerCase();
+    html += '<div class="acct-row' + (isActive ? ' acct-active' : '') + '" ' +
+            'data-search="' + escapeHtml(search) + '" ' +
+            'data-tenant-id="' + escapeHtml(a.tenant_id || '') + '" ' +
+            'data-tenant-domain="' + escapeHtml(a.tenant_default_domain || '') + '" ' +
+            'data-user-name="' + escapeHtml(a.user_name || '') + '" ' +
+            'data-subscription-id="' + escapeHtml(a.subscription_id || '') + '" ' +
+            'data-subscription-name="' + escapeHtml(a.subscription_name || '') + '" ' +
+            'onclick="onPickerRowClick(this)" style="cursor:pointer">' +
+            '<span class="acct-meta">' +
+              '<span class="acct-user">' + escapeHtml(a.user_name || '(unknown user)') + '</span>' +
+              '<span class="acct-tenant">tenant: <code>' + escapeHtml(a.tenant_default_domain || a.tenant_id || '?') + '</code></span>' +
+              '<span class="acct-sub">subscription: ' + escapeHtml(a.subscription_name || '(none)') +
+                (a.subscription_id ? ' <code class="muted">' + escapeHtml(a.subscription_id) + '</code>' : '') + '</span>' +
+              (a.state && a.state !== 'Enabled' ? '<span class="acct-warn">state: ' + escapeHtml(a.state) + '</span>' : '') +
+            '</span>' +
+            (isActive ? '<span class="acct-badge">active</span>' : '') +
+            '</div>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+function onPickerRowClick(row){
+  applyAccountToForm({
+    tenant_id: row.dataset.tenantId,
+    tenant_default_domain: row.dataset.tenantDomain,
+    user_name: row.dataset.userName,
+    subscription_id: row.dataset.subscriptionId,
+    subscription_name: row.dataset.subscriptionName,
+  }, {switchAz: false});
+  // Visually mark the chosen row.
+  document.querySelectorAll('#lazyPicker .acct-row').forEach(function(r){
+    r.classList.toggle('acct-chosen', r === row);
+  });
+  clearPickerStatus('✓ Identity inputs filled from ' + (row.dataset.userName || row.dataset.tenantId) +
+                    '. Review them, then continue. (Your az CLI context was NOT changed.)');
+}
+
+function loadAccounts(){
+  clearPickerStatus('Loading accounts from az CLI…');
+  fetch("{{ url_for('accounts_list') }}")
+    .then(function(r){ return r.json().then(function(j){ return {status:r.status, body:j}; }); })
+    .then(function(res){
+      if (res.status !== 200){
+        clearPickerStatus('⚠️ /api/accounts/list returned HTTP ' + res.status);
+        return;
+      }
+      renderLazyPicker(res.body);
+      clearPickerStatus('');
+    })
+    .catch(function(e){ clearPickerStatus('⚠️ ' + (e && e.message || e)); });
+}
+
+function filterAccounts(){
+  var f = document.getElementById('acctFilter');
+  if (!f) return;
+  var q = (f.value || '').toLowerCase().trim();
+  var rows = document.querySelectorAll('#lazyPicker .acct-row');
+  var shown = 0;
+  rows.forEach(function(r){
+    var s = r.dataset.search || '';
+    var match = !q || s.indexOf(q) !== -1;
+    r.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  clearPickerStatus(q ? (shown + ' of ' + rows.length + ' accounts match') : '');
+}
+
+// ----- Login modal (➕ Sign in as different user) -----
+var _loginPoll = null;
+function openLoginModal(){
+  document.getElementById('loginTenant').value = '';
+  document.getElementById('loginStatus').textContent = '';
+  document.getElementById('loginStartBtn').disabled = false;
+  document.getElementById('loginModal').style.display = 'flex';
+}
+function closeLoginModal(){
+  if (_loginPoll){ clearInterval(_loginPoll); _loginPoll = null; }
+  document.getElementById('loginModal').style.display = 'none';
+}
+function startLogin(){
+  var tenant = document.getElementById('loginTenant').value.trim();
+  var statusEl = document.getElementById('loginStatus');
+  var btn = document.getElementById('loginStartBtn');
+  btn.disabled = true;
+  statusEl.textContent = 'Launching az login… (a browser window will open)';
+  fetch("{{ url_for('accounts_login_start') }}", {
+    method:'POST',
+    headers: csrfHeaders({'Content-Type':'application/json'}),
+    body: JSON.stringify({tenant_id: tenant || null}),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(j){
+    if (!j.login_id){ statusEl.textContent = '⚠️ ' + (j.error || 'no login id'); btn.disabled = false; return; }
+    pollLogin(j.login_id);
+  })
+  .catch(function(e){ statusEl.textContent = '⚠️ ' + (e && e.message || e); btn.disabled = false; });
+}
+function pollLogin(loginId){
+  var statusEl = document.getElementById('loginStatus');
+  if (_loginPoll){ clearInterval(_loginPoll); }
+  var ticks = 0;
+  _loginPoll = setInterval(function(){
+    ticks++;
+    fetch("/api/accounts/login/" + encodeURIComponent(loginId))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j.status === 'running'){
+          statusEl.textContent = 'Waiting for you to finish signing in… (' + (ticks * 2) + 's elapsed)';
+          return;
+        }
+        clearInterval(_loginPoll); _loginPoll = null;
+        if (j.status === 'succeeded'){
+          statusEl.textContent = '✓ Signed in. Re-loading accounts…';
+          // Reload the picker (NOT the whole page — that would wipe any inputs
+          // the user already typed). If they typed nothing, they can now click
+          // a row to fill the form.
+          setTimeout(function(){ closeLoginModal(); loadAccounts(); }, 400);
+        } else {
+          statusEl.textContent = '⚠️ ' + j.status + ': ' + (j.error || '');
+          document.getElementById('loginStartBtn').disabled = false;
+        }
+      })
+      .catch(function(e){
+        clearInterval(_loginPoll); _loginPoll = null;
+        statusEl.textContent = '⚠️ poll error: ' + (e && e.message || e);
+        document.getElementById('loginStartBtn').disabled = false;
+      });
+  }, 2000);
+}
+
+// Wire identity-input change handlers.
+document.getElementById('tenant_id').addEventListener('input', mirrorTenantToActingAs);
+document.getElementById('actingAsUpn').addEventListener('input', invalidateConfirmation);
+document.getElementById('actingAsSubscriptionInput').addEventListener('input', invalidateConfirmation);
+// On page load: hidden mirrors are blank (nothing to apply); but in case the
+// browser autofilled the visible inputs, sync the hidden mirror once.
+mirrorTenantToActingAs();
+
+// ----- Wizard navigation -----
+var currentStep = 1;
+var TOTAL_STEPS = 3;
+function _updateStepperFill(targetStep){
+  // Fill connector bars proportionally to how many steps are done. Drives
+  // a CSS custom property `--fill` on each .stepper-sep so the gradient in
+  // CSS animates from grey -> brand-green.
+  var seps = document.querySelectorAll('.stepper-sep');
+  seps.forEach(function(sep, idx){
+    // Separator idx sits between item (idx+1) and item (idx+2). It should
+    // be filled (100%) once the user is past item idx+1.
+    var filled = (targetStep > (idx + 1));
+    sep.style.setProperty('--fill', filled ? '100%' : '0%');
+  });
+}
+function _swapWizardStep(targetStep, direction){
+  var steps = document.querySelectorAll('.wizard-step');
+  var outgoing = null, incoming = null;
+  steps.forEach(function(el){
+    if (el.classList.contains('active')) outgoing = el;
+    if (String(el.dataset.step) === String(targetStep)) incoming = el;
+  });
+  // Set direction so CSS keyframes know which way to slide. +1 = forward
+  // (incoming enters from right, outgoing exits to left); -1 = back.
+  document.documentElement.style.setProperty('--enter-dir', direction);
+
+  if (outgoing && outgoing !== incoming) {
+    outgoing.classList.remove('active');
+    outgoing.classList.add('leaving');
+    // After the leave animation finishes, remove the leaving class so the
+    // element returns to display:none. 220ms matches `wizardLeave` duration.
+    setTimeout(function(){ outgoing.classList.remove('leaving'); }, 230);
+  }
+  if (incoming) {
+    // Trigger reflow so the enter animation always plays (even if the element
+    // was already classed something briefly).
+    void incoming.offsetWidth;
+    incoming.classList.add('active');
+  }
+}
+function goStep(n){
+  // Validate step 1 minimum fields before moving forward
+  if (currentStep === 1 && n === 2) {
+    var name = document.getElementById('agent_display_name').value.trim();
+    var tid  = document.getElementById('tenant_id').value.trim();
+    var upn  = document.getElementById('actingAsUpn').value.trim();
+    if (!name) { alert("Please enter a display name for your agent."); return; }
+    if (!tid)  { alert("Please enter the Entra tenant ID at the top of the form (or click 'Load my az accounts' and pick one)."); return; }
+    if (!upn)  { alert("Please enter the acting-as UPN at the top of the form (or click 'Load my az accounts' and pick one)."); return; }
+  }
+  var direction = (n >= currentStep) ? 1 : -1;
+  currentStep = n;
+  _swapWizardStep(n, direction);
+  document.querySelectorAll('.stepper-item').forEach(function(el){
+    var s = parseInt(el.dataset.step, 10);
+    var wasDone = el.classList.contains('done');
+    var wasActive = el.classList.contains('active');
+    var nowDone = s < n;
+    var nowActive = s === n;
+    // Only re-apply class if state changed — keeps animations from re-firing
+    // every nav action and only pulses when something truly transitions.
+    if (wasDone !== nowDone) el.classList.toggle('done', nowDone);
+    if (wasActive !== nowActive) el.classList.toggle('active', nowActive);
+  });
+  _updateStepperFill(n);
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (n === 2) { runStepDiagnostics(); }
+  if (n === 3) { populateReview(); renderConfirmation(); }
+}
+// Initialize stepper fill on first paint (no animation, just baseline).
+_updateStepperFill(currentStep);
+
+// ----- Step 2: prereq check -----
+var levelEmoji = {ok:'✓', warn:'!', fail:'✗', skipped:'–'};
+var levelColor = {ok:'#16a34a', warn:'#d97706', fail:'#dc2626', skipped:'#6b7280'};
+var lastReport = null;
+
+function renderResults(report){
+  var html = '';
+  var lastCat = null;
+  report.results.forEach(function(r){
+    if (r.category !== lastCat){
+      lastCat = r.category;
+      html += '<h4 style="margin:14px 0 6px;font-size:12.5px;text-transform:uppercase;color:#6b7280;letter-spacing:.04em">'+lastCat+'</h4>';
+    }
+    html += '<div style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px">'
+         +  '<span style="display:inline-block;width:22px;color:'+levelColor[r.level]+';font-weight:700">'+levelEmoji[r.level]+'</span>'
+         +  '<strong>'+r.name+'</strong> — '+r.summary;
+    if (r.detail){
+      html += '<div style="color:#6b7280;font-size:12.5px;margin-left:26px;margin-top:2px;white-space:pre-wrap">'+r.detail+'</div>';
+    }
+    if ((r.level==='warn' || r.level==='fail') && r.fix){
+      html += '<div style="color:#0078d4;font-size:12.5px;margin-left:26px;margin-top:2px">→ '+r.fix+'</div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderSummary(report){
+  var overall = report.overall;
+  var pillBg = overall==='ok'?'#dcfce7':(overall==='warn'?'#fef3c7':'#fee2e2');
+  var pillFg = overall==='ok'?'#166534':(overall==='warn'?'#92400e':'#991b1b');
+  var label = overall==='ok'?'✅ Ready to onboard'
+            : overall==='warn'?'⚠️ Onboarding can proceed — some warnings'
+            : '❌ Not ready — fix the failures, then re-run checks';
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:6px;background:'+pillBg+';color:'+pillFg+';margin-bottom:14px;font-weight:600">'
+       + label
+       + ' <span style="font-weight:400;font-size:13px">'+report.counts.ok+' ok · '+report.counts.warn+' warn · '+report.counts.fail+' fail · '+report.counts.skipped+' skipped</span></div>';
+}
+
+function runStepDiagnostics(){
+  var summary = document.getElementById('diagSummary');
+  var results = document.getElementById('diagResults');
+  var btn = document.getElementById('btnContinueAfterDiag');
+  var hint = document.getElementById('stepHint');
+  summary.innerHTML = '';
+  // Sleek progress bar + rotating phase label. Phases mirror diagnostics.run_all order
+  // (local env → tenant + Purview → Key Vault → provider endpoint). Timings are best-
+  // effort perceived-progress: the actual response cancels any in-flight timer.
+  results.innerHTML =
+    '<div class="progress-shell" id="diagProgress">' +
+      '<div class="phase-label" id="diagPhaseLabel">Checking local environment&hellip;</div>' +
+      '<div class="progress-indeterminate"></div>' +
+    '</div>';
+  btn.disabled = true;
+  hint.textContent = 'Running checks…';
+
+  var phaseTimers = [];
+  function scheduleDiagPhases(){
+    var phases = [
+      [2200, 'Checking tenant &amp; Purview API\u2026'],
+      [4600, 'Checking Key Vault access\u2026'],
+      [7200, 'Checking provider endpoint\u2026'],
+      [10500, 'Almost there\u2026'],
+    ];
+    phases.forEach(function(p){
+      phaseTimers.push(setTimeout(function(){
+        var lbl = document.getElementById('diagPhaseLabel');
+        if (lbl) lbl.innerHTML = p[1];
+      }, p[0]));
+    });
+  }
+  function clearDiagPhases(){
+    phaseTimers.forEach(function(t){ clearTimeout(t); });
+    phaseTimers = [];
+  }
+  scheduleDiagPhases();
+
+  var fd = new FormData(document.getElementById('wizForm'));
+  fetch("{{ url_for('diagnostics_api') }}", {method:'POST', headers: csrfHeaders(), body:fd})
+    .then(function(r){ return r.json(); })
+    .then(function(report){
+      clearDiagPhases();
+      lastReport = report;
+      summary.innerHTML = renderSummary(report);
+      results.innerHTML = renderResults(report);
+      if (report.overall === 'fail') {
+        btn.disabled = true;
+        btn.textContent = 'Fix failures to continue';
+        btn.style.background = '#9ca3af';
+        // Offer an override link
+        if (!document.getElementById('overrideLink')) {
+          var a = document.createElement('a');
+          a.id = 'overrideLink';
+          a.href = '#';
+          a.textContent = 'override and continue anyway';
+          a.style.cssText = 'display:block;margin-top:10px;font-size:12.5px;color:#dc2626';
+          a.onclick = function(e){ e.preventDefault();
+            btn.disabled = false; btn.textContent = '⚠ Continue anyway →'; btn.style.background = '#dc2626'; };
+          summary.appendChild(a);
+        }
+        hint.textContent = 'Step 2 of 3 — please fix failures';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Continue: Review & deploy →';
+        btn.style.background = '#0078d4';
+        hint.textContent = 'Step 2 of 3 — ready to continue';
+      }
+    })
+    .catch(function(e){
+      clearDiagPhases();
+      results.innerHTML = '<div class="alert err">Diagnostics call failed: '+(e&&e.message?e.message:e)+'</div>';
+      hint.textContent = 'Step 2 of 3 — diagnostics error';
+    });
+}
+
+// ----- Step 3: review + confirmation gate -----
+function populateReview(){
+  document.getElementById('rvAgent').textContent =
+    document.getElementById('agent_display_name').value || '—';
+  var provEl = document.querySelector('input[name="provider"]:checked');
+  document.getElementById('rvProvider').textContent = provEl ? provEl.value : '—';
+  document.getElementById('rvTenant').textContent =
+    document.getElementById('tenant_id').value || '—';
+  var p = document.getElementById('rvPrereq');
+  if (lastReport) {
+    var c = lastReport.counts;
+    p.innerHTML = '<strong style="color:'+levelColor[lastReport.overall]+'">'+lastReport.overall.toUpperCase()+'</strong> '
+                + '<span class="muted">('+c.ok+' ok · '+c.warn+' warn · '+c.fail+' fail · '+c.skipped+' skipped)</span>';
+  } else {
+    p.textContent = 'not run';
+  }
+}
+
+function renderConfirmation(){
+  var name = document.getElementById('agent_display_name').value.trim() || '(unnamed agent)';
+  var tenant = document.getElementById('actingAsTenantId').value.trim();
+  var domain = document.getElementById('actingAsTenantDomain').value.trim();
+  // UPN + subscription now live in the visible inputs (no hidden mirrors).
+  var sub = document.getElementById('actingAsSubscriptionInput').value.trim();
+  var user = document.getElementById('actingAsUpn').value.trim();
+  var text = document.getElementById('confirmText');
+  var toggle = document.getElementById('confirmToggle');
+  var cb = document.getElementById('confirmCheckbox');
+  var hint = document.getElementById('confirmHint');
+  var submit = document.getElementById('btnSubmit');
+
+  if (!tenant || !user){
+    text.innerHTML = 'Identity not yet provided.';
+    cb.disabled = true; cb.checked = false;
+    toggle.style.opacity = '.5'; toggle.style.pointerEvents = 'none';
+    hint.style.display = 'block';
+    document.getElementById('actingAsConfirm').value = '';
+    submit.disabled = true; submit.style.background = '#9ca3af';
+    return;
+  }
+  var tenantLabel = domain ? (domain + ' (' + tenant + ')') : tenant;
+  var subLabel = sub ? sub : '(no subscription — directory-only)';
+  text.innerHTML =
+    'I am about to onboard <strong>' + escapeHtml(name) + '</strong> as ' +
+    '<strong>' + escapeHtml(user) + '</strong> ' +
+    'in tenant <strong>' + escapeHtml(tenantLabel) + '</strong>, ' +
+    'subscription <code>' + escapeHtml(subLabel) + '</code>. ' +
+    'This will create a real Entra app registration and grant it Microsoft Purview API permissions. ' +
+    'The server will re-verify the live <code>az account show</code> matches before any resource is created.';
+  cb.disabled = false;
+  toggle.style.opacity = '1'; toggle.style.pointerEvents = 'auto';
+  hint.style.display = 'none';
+  // Always require re-tick when we re-render (identity may have changed).
+  cb.checked = false;
+  document.getElementById('actingAsConfirm').value = '';
+  submit.disabled = true; submit.style.background = '#9ca3af';
+}
+
+// Any change to identity, agent name, or provider invalidates a prior confirmation.
+function invalidateConfirmation(){
+  var cb = document.getElementById('confirmCheckbox');
+  if (cb && cb.checked){
+    cb.checked = false;
+    document.getElementById('actingAsConfirm').value = '';
+    var btn = document.getElementById('btnSubmit');
+    if (btn){ btn.disabled = true; btn.style.background = '#9ca3af'; }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var cb = document.getElementById('confirmCheckbox');
+  if (cb){
+    cb.addEventListener('change', function(){
+      var on = cb.checked;
+      document.getElementById('actingAsConfirm').value = on ? 'on' : '';
+      var btn = document.getElementById('btnSubmit');
+      btn.disabled = !on;
+      btn.style.background = on ? '#0078d4' : '#9ca3af';
+    });
+  }
+  // Generalized pre-fill "clear" link handler.
+  // Any <a class="prefill-clear" data-clear-fields="id1,id2,..." data-banner-id="banner-id">
+  // will wipe those inputs, hide the named banner, and focus the first input.
+  // Used by Vertex, Azure OpenAI, OpenAI, AWS Bedrock, Anthropic Claude, and Custom HTTP.
+  document.querySelectorAll('a.prefill-clear[data-clear-fields]').forEach(function(link){
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      var ids = (link.getAttribute('data-clear-fields') || '')
+        .split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      ids.forEach(function(id){
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === 'SELECT'){
+          el.selectedIndex = 0;
+        } else {
+          el.value = '';
+        }
+      });
+      var bid = link.getAttribute('data-banner-id');
+      if (bid){
+        var banner = document.getElementById(bid);
+        if (banner){ banner.style.display = 'none'; }
+      }
+      if (ids.length){
+        var first = document.getElementById(ids[0]);
+        if (first && typeof first.focus === 'function'){ first.focus(); }
+      }
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Multi-vault picker (v1.8) — Azure-backed Key Vault picker
+//
+// Lazy-loads sub/vault/RG/location lists only when the user opens the
+// picker. Keeps the form's hidden <input name="kv_vault_name"> in sync
+// with the selected vault. Supports inline "Provision new vault" via the
+// /api/azure/vaults POST endpoint (1-3 min LRO).
+//
+// All state is local to this IIFE; no globals leak.
+// ─────────────────────────────────────────────────────────────────────────
+(function(){
+  var picker = document.getElementById('kvPicker');
+  if (!picker) return;
+
+  var elBody       = document.getElementById('kvPickerBody');
+  var elToggle     = document.getElementById('kvPickerToggle');
+  var elCancel     = document.getElementById('kvCancel');
+  var elWhoami     = document.getElementById('kvWhoami');
+  var elSubSelect  = document.getElementById('kvSubscription');
+  var elRefresh    = document.getElementById('kvRefresh');
+  var elVaultList  = document.getElementById('kvVaultList');
+  var elProbe      = document.getElementById('kvProbeResult');
+  var elUseBtn     = document.getElementById('kvUseSelected');
+  var elHidden     = document.getElementById('kvVaultName');
+  var elSummary    = document.getElementById('kvPickerSummary');
+
+  var elAdvToggle  = document.getElementById('kvAdvancedToggle');
+  var elAdv        = document.getElementById('kvAdvanced');
+  var elNewName    = document.getElementById('kvNewName');
+  var elNewRg      = document.getElementById('kvNewRg');
+  var elNewLoc     = document.getElementById('kvNewLocation');
+  var elProvGo     = document.getElementById('kvProvisionGo');
+  var elProvStatus = document.getElementById('kvProvisionStatus');
+
+  var defaultVault = picker.getAttribute('data-default-vault') || '';
+  var loadedOnce   = false;
+  var selectedSub  = null;   // {id, name}
+  var selectedVault= null;   // {name, location, resource_group, id}
+  var currentVaults= [];     // array of vault objects for currentSub
+
+  function setSummary(name, badge){
+    if (!elSummary) return;
+    if (!name){
+      elSummary.innerHTML = '<strong>No vault selected.</strong> Pick one above.';
+      return;
+    }
+    var nameLower = String(name).toLowerCase();
+    var badgeHtml = badge ? ' <span class="kv-vault-badge ' + (badge === 'default' ? 'kv-badge-default' : 'kv-badge-new') + '">' + badge + '</span>' : '';
+    elSummary.innerHTML =
+      'Using <code>' + escapeHtml(name) + '</code>' + badgeHtml +
+      ' · all sensitive values land in <code>https://' + escapeHtml(nameLower) + '.vault.azure.net/</code>.' +
+      ' Generated <code>.env</code> files only contain <code>@KV:</code> references.';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function fetchJson(url, opts){
+    opts = opts || {};
+    return fetch(url, opts).then(function(r){
+      return r.json().then(function(body){
+        if (!r.ok) {
+          var err = new Error(body && body.error ? body.error : ('HTTP ' + r.status));
+          err.status = r.status;
+          err.body = body;
+          throw err;
+        }
+        return body;
+      });
+    });
+  }
+
+  function openPicker(){
+    elBody.classList.add('open');
+    elBody.setAttribute('aria-hidden', 'false');
+    elToggle.textContent = 'Close';
+    if (!loadedOnce){
+      loadedOnce = true;
+      loadWhoami();
+      loadSubscriptions();
+    }
+  }
+  function closePicker(){
+    elBody.classList.remove('open');
+    elBody.setAttribute('aria-hidden', 'true');
+    elToggle.textContent = 'Change vault';
+  }
+  elToggle.addEventListener('click', function(){
+    if (elBody.classList.contains('open')) closePicker(); else openPicker();
+  });
+  elCancel.addEventListener('click', closePicker);
+
+  function loadWhoami(){
+    elWhoami.textContent = 'Loading active Azure identity…';
+    fetchJson('/api/azure/whoami').then(function(me){
+      if (!me || !me.user_name){
+        elWhoami.innerHTML = '<span style="color:#b91c1c;">⚠️ No active Azure identity. Run <code>az login</code> in a terminal and click ↻ Refresh.</span>';
+        return;
+      }
+      elWhoami.innerHTML =
+        'Signed in as <strong>' + escapeHtml(me.user_name) + '</strong> · ' +
+        'tenant <strong>' + escapeHtml(me.tenant_default_domain || me.tenant_id || '?') + '</strong>';
+    }).catch(function(err){
+      elWhoami.innerHTML = '<span style="color:#b91c1c;">whoami failed: ' + escapeHtml(err.message) + '</span>';
+    });
+  }
+
+  function loadSubscriptions(){
+    elSubSelect.innerHTML = '<option>Loading subscriptions…</option>';
+    elSubSelect.disabled = true;
+    fetchJson('/api/azure/subscriptions').then(function(data){
+      var subs = (data && data.subscriptions) || [];
+      elSubSelect.innerHTML = '';
+      if (!subs.length){
+        elSubSelect.innerHTML = '<option value="">No subscriptions visible</option>';
+        return;
+      }
+      subs.forEach(function(s){
+        var opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name + '  (' + s.id.substring(0,8) + '…)';
+        elSubSelect.appendChild(opt);
+      });
+      elSubSelect.disabled = false;
+      onSubscriptionChange();
+    }).catch(function(err){
+      elSubSelect.innerHTML = '<option value="">Failed to list</option>';
+      elVaultList.innerHTML = '<div style="padding:12px;color:#b91c1c;font-size:12px;">Failed to load subscriptions: ' + escapeHtml(err.message) + '</div>';
+    });
+  }
+  elSubSelect.addEventListener('change', onSubscriptionChange);
+  elRefresh.addEventListener('click', function(){
+    if (!selectedSub) return;
+    loadVaults(selectedSub.id, true);
+  });
+
+  function onSubscriptionChange(){
+    var id = elSubSelect.value;
+    var opt = elSubSelect.options[elSubSelect.selectedIndex];
+    if (!id) return;
+    selectedSub = { id: id, name: (opt ? opt.textContent : '') };
+    loadVaults(id, false);
+    loadRgsAndLocations(id);
+  }
+
+  function loadVaults(subId, refresh){
+    elVaultList.innerHTML = '<div style="padding:14px;color:#64748b;font-size:12px;">Loading vaults from Azure…</div>';
+    elUseBtn.disabled = true;
+    elProbe.innerHTML = '';
+    var qs = refresh ? '?subscription_id=' + encodeURIComponent(subId) + '&refresh=1'
+                     : '?subscription_id=' + encodeURIComponent(subId);
+    fetchJson('/api/azure/vaults' + qs).then(function(data){
+      currentVaults = (data && data.vaults) || [];
+      renderVaultList(currentVaults);
+    }).catch(function(err){
+      elVaultList.innerHTML = '<div style="padding:14px;color:#b91c1c;font-size:12px;">Failed to load vaults: ' + escapeHtml(err.message) + '</div>';
+    });
+  }
+
+  function renderVaultList(vaults){
+    if (!vaults.length){
+      elVaultList.innerHTML =
+        '<div style="padding:14px;color:#64748b;font-size:12px;">' +
+        'No Key Vaults visible to your identity in this subscription. ' +
+        'Use <strong>Provision a new Key Vault</strong> below to create one.' +
+        '</div>';
+      return;
+    }
+    var defLower = (defaultVault || '').toLowerCase();
+    elVaultList.innerHTML = vaults.map(function(v){
+      var nameLower = (v.name || '').toLowerCase();
+      var isDefault = nameLower === defLower;
+      return '<div class="kv-vault-item" data-name="' + escapeHtml(v.name) + '"' +
+             ' data-rg="' + escapeHtml(v.resource_group || '') + '"' +
+             ' data-location="' + escapeHtml(v.location || '') + '">' +
+             '<input type="radio" name="__kv_radio" id="kvR_' + escapeHtml(nameLower) + '"' +
+                (isDefault ? ' checked' : '') + '>' +
+             '<label for="kvR_' + escapeHtml(nameLower) + '" style="flex:1; cursor:pointer; margin:0;">' +
+               '<div class="kv-vault-name">' + escapeHtml(v.name) +
+                  (isDefault ? ' <span class="kv-vault-badge kv-badge-default">default</span>' : '') +
+               '</div>' +
+               '<div class="kv-vault-meta">' +
+                 'rg=<code>' + escapeHtml(v.resource_group || '?') + '</code>' +
+                 ' · loc=<code>' + escapeHtml(v.location || '?') + '</code>' +
+               '</div>' +
+             '</label>' +
+             '</div>';
+    }).join('');
+
+    // Wire up clicks (whole row selects radio)
+    Array.prototype.forEach.call(elVaultList.querySelectorAll('.kv-vault-item'), function(row){
+      row.addEventListener('click', function(){
+        var radio = row.querySelector('input[type=radio]');
+        if (radio){ radio.checked = true; }
+        Array.prototype.forEach.call(elVaultList.querySelectorAll('.kv-vault-item'), function(r){
+          r.classList.remove('selected');
+        });
+        row.classList.add('selected');
+        selectedVault = {
+          name: row.getAttribute('data-name'),
+          resource_group: row.getAttribute('data-rg'),
+          location: row.getAttribute('data-location'),
+        };
+        elUseBtn.disabled = false;
+        probeSelected();
+      });
+    });
+
+    // Auto-select default if present
+    var defRow = elVaultList.querySelector('.kv-vault-item input[type=radio]:checked');
+    if (defRow){
+      var row = defRow.closest('.kv-vault-item');
+      row.classList.add('selected');
+      selectedVault = {
+        name: row.getAttribute('data-name'),
+        resource_group: row.getAttribute('data-rg'),
+        location: row.getAttribute('data-location'),
+      };
+      elUseBtn.disabled = false;
+      probeSelected();
+    }
+  }
+
+  function probeSelected(){
+    if (!selectedVault){ elProbe.innerHTML = ''; return; }
+    elProbe.innerHTML = '<div class="kv-probe-result kv-probe-loading">Probing access to <code>' +
+                        escapeHtml(selectedVault.name) + '</code>…</div>';
+    fetchJson('/api/azure/vaults/probe', {
+      method: 'POST',
+      headers: csrfHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ name: selectedVault.name }),
+    }).then(function(p){
+      if (p.ok){
+        elProbe.innerHTML = '<div class="kv-probe-result kv-probe-ok">' +
+          '✓ Read + Write OK' +
+          (p.can_delete ? ' + Delete' : ' (delete not granted — non-blocking)') +
+          ' on <code>' + escapeHtml(selectedVault.name) + '</code>.</div>';
+      } else {
+        elProbe.innerHTML = '<div class="kv-probe-result kv-probe-bad">' +
+          '⚠️ ' + escapeHtml(p.error_msg || ('error_code=' + p.error_code)) +
+          '</div>';
+      }
+    }).catch(function(err){
+      elProbe.innerHTML = '<div class="kv-probe-result kv-probe-bad">Probe failed: ' + escapeHtml(err.message) + '</div>';
+    });
+  }
+
+  elUseBtn.addEventListener('click', function(){
+    if (!selectedVault) return;
+    elHidden.value = selectedVault.name;
+    var isDefault = (selectedVault.name || '').toLowerCase() === (defaultVault || '').toLowerCase();
+    setSummary(selectedVault.name, isDefault ? 'default' : 'selected');
+    closePicker();
+  });
+
+  // ── Advanced: Provision-new ─────────────────────────────────────────
+  elAdvToggle.addEventListener('click', function(){
+    if (elAdv.classList.contains('open')){
+      elAdv.classList.remove('open');
+      elAdv.setAttribute('aria-hidden', 'true');
+      elAdvToggle.textContent = '▸ Provision a new Key Vault (advanced)';
+    } else {
+      elAdv.classList.add('open');
+      elAdv.setAttribute('aria-hidden', 'false');
+      elAdvToggle.textContent = '▾ Provision a new Key Vault (advanced)';
+    }
+  });
+
+  function loadRgsAndLocations(subId){
+    elNewRg.innerHTML = '<option>Loading…</option>';
+    elNewLoc.innerHTML = '<option>Loading…</option>';
+    fetchJson('/api/azure/resource-groups?subscription_id=' + encodeURIComponent(subId))
+      .then(function(data){
+        var rgs = (data && data.resource_groups) || [];
+        if (!rgs.length){
+          elNewRg.innerHTML = '<option value="">(no resource groups visible — create one in the portal first)</option>';
+        } else {
+          elNewRg.innerHTML = rgs.map(function(r){
+            return '<option value="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) +
+                   ' (' + escapeHtml(r.location || '?') + ')</option>';
+          }).join('');
+        }
+      }).catch(function(err){
+        elNewRg.innerHTML = '<option value="">Failed: ' + escapeHtml(err.message) + '</option>';
+      });
+    fetchJson('/api/azure/locations?subscription_id=' + encodeURIComponent(subId))
+      .then(function(data){
+        var locs = (data && data.locations) || [];
+        elNewLoc.innerHTML = locs.map(function(l){
+          var sel = (l.name === 'eastus') ? ' selected' : '';
+          return '<option value="' + escapeHtml(l.name) + '"' + sel + '>' + escapeHtml(l.display_name) + '</option>';
+        }).join('');
+      }).catch(function(err){
+        elNewLoc.innerHTML = '<option value="">Failed: ' + escapeHtml(err.message) + '</option>';
+      });
+  }
+
+  elProvGo.addEventListener('click', function(){
+    var name = (elNewName.value || '').trim();
+    var rg   = (elNewRg.value || '').trim();
+    var loc  = (elNewLoc.value || '').trim();
+    if (!selectedSub){ alert('Pick a subscription first.'); return; }
+    if (!name || !rg || !loc){ alert('Name, resource group, and location are all required.'); return; }
+    if (!/^[a-zA-Z][a-zA-Z0-9-]{1,22}[a-zA-Z0-9]$/.test(name) || name.indexOf('--') !== -1){
+      alert('Vault name must be 3-24 chars, letters/digits/hyphens only, start with a letter, end with letter or digit, no consecutive hyphens.');
+      return;
+    }
+    elProvGo.disabled = true;
+    elProvStatus.style.display = 'block';
+    elProvStatus.className = 'kv-provision-status kv-probe-loading';
+    elProvStatus.textContent = 'Provisioning vault "' + name + '" in ' + rg + '/' + loc + '… (1-3 min, please wait)';
+
+    fetchJson('/api/azure/vaults', {
+      method: 'POST',
+      headers: csrfHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({
+        name: name,
+        subscription_id: selectedSub.id,
+        resource_group: rg,
+        location: loc,
+      }),
+    }).then(function(res){
+      elProvGo.disabled = false;
+      if (!res || !res.ok){
+        elProvStatus.className = 'kv-provision-status kv-probe-bad';
+        elProvStatus.textContent = 'Provisioning failed: ' + (res && res.error ? res.error : 'unknown error');
+        return;
+      }
+      var ra = res.role_assignment || {};
+      var msg = '✓ Vault "' + res.vault.name + '" provisioned in ' + res.vault.location + '.';
+      if (ra.ok){
+        msg += '\n✓ Granted you Key Vault Secrets Officer.';
+      } else if (ra.error){
+        msg += '\n⚠️ Role-assignment did not auto-complete:\n' + ra.error;
+      }
+      elProvStatus.className = ra.ok ? 'kv-provision-status kv-probe-ok' : 'kv-provision-status kv-probe-loading';
+      elProvStatus.textContent = msg;
+      // Refresh the vault list so the newly-created vault appears and can be picked
+      loadVaults(selectedSub.id, true);
+    }).catch(function(err){
+      elProvGo.disabled = false;
+      elProvStatus.className = 'kv-provision-status kv-probe-bad';
+      elProvStatus.textContent = 'Provisioning failed: ' + err.message;
+    });
+  });
+
+  // Set the initial summary based on the default vault (the hidden field
+  // already holds it; nothing to do unless we want to show the badge nicely).
+  if (defaultVault){
+    setSummary(defaultVault, 'default');
+  } else {
+    setSummary('', null);
+  }
+})();
+</script>
+{% endblock %}

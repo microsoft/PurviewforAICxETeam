@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent365-purview-sdk-onboarder"
+version = "0.1.0"
+description = "One-click onboarding for AI agents into Microsoft Purview + Agent 365 SDK"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["purview", "agent365", "onboarding", "dspm", "azure"]
+authors = [{name = "Agent 365 + Purview SDK Onboarder contributors"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Security",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Framework :: Flask",
+]
+dependencies = [
+    "flask>=3.0,<4.0",
+    "jinja2>=3.1,<4.0",
+    "azure-identity>=1.15,<2.0",
+    "azure-keyvault-secrets>=4.7,<5.0",
+    "azure-mgmt-keyvault>=10.3,<11.0",
+    "azure-mgmt-resource>=23.0,<24.0",
+    "azure-mgmt-subscription>=3.1,<4.0",
+    "azure-mgmt-authorization>=4.0,<5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+build = [
+    "pyinstaller>=6.5",
+    "build>=1.2",
+]
+
+[project.scripts]
+agent365-onboarder = "agent365_onboarder:main"
+
+[project.urls]
+Homepage = "https://github.com/microsoft/PurviewforAICxETeam/tree/main/Agent365PurviewSDKOnboarder"
+Issues = "https://github.com/microsoft/PurviewforAICxETeam/issues"
+Documentation = "https://github.com/microsoft/PurviewforAICxETeam/tree/main/Agent365PurviewSDKOnboarder#readme"
+
+# ---------- setuptools configuration ----------
+[tool.setuptools]
+py-modules = ["agent365_onboarder"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*", "installer*", "scripts*"]
+
+[tool.setuptools.package-data]
+"app" = [
+    "templates/**/*.html",
+    "static/**/*.css",
+    "static/**/*.js",
+    "static/**/*.svg",
+    "static/**/*.png",
+    "static/**/*.ico",
+    "codegen_templates/*.tmpl",
+    "codegen_templates/*.md.tmpl",
+]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "*.bak",
+    "*.bak-*",
+    "*.pyc",
+    "*.log",
+    "*.pid",
+    ".env",
+    ".env.*",
+    "__pycache__/*",
+]
+
+# ---------- tooling defaults ----------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true

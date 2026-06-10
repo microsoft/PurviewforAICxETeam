@@ -1,0 +1,1046 @@
+/* Agent SDK Onboarder — Fluent 2 / Microsoft 365 / Purview visual refresh.
+   All class names from the previous theme are preserved so functionality
+   and JS hooks remain unchanged. Only colors, typography, depth, radii
+   and spacing change. Backup of the pre-Fluent theme is at
+   style.css.bak-pre-fluent. */
+
+/* ---------- Fluent design tokens ---------- */
+:root {
+  /* Brand — M365 communication blue */
+  --brand-primary:        #0F6CBD;
+  --brand-hover:          #115EA3;
+  --brand-pressed:        #0C3B5E;
+  --brand-bg-subtle:      #EBF3FC;
+  --brand-bg-selected:    #CFE4FA;
+
+  /* Purview accent (DSPM for AI uses a purple/teal palette) */
+  --purview-accent:       #742774;
+  --purview-accent-soft:  #F5EDF5;
+
+  /* Neutral surfaces */
+  --canvas:               #FAFAFA;
+  --canvas-alt:           #F5F5F5;
+  --surface:              #FFFFFF;
+  --surface-raised:       #FFFFFF;
+
+  /* Strokes */
+  --stroke-subtle:        #E0E0E0;
+  --stroke-base:          #D1D1D1;
+  --stroke-strong:        #B5B5B5;
+
+  /* Text */
+  --text-primary:         #242424;
+  --text-secondary:       #616161;
+  --text-tertiary:        #8A8A8A;
+  --text-disabled:        #BDBDBD;
+  --text-on-brand:        #FFFFFF;
+
+  /* Status colors */
+  --status-success:       #107C10;
+  --status-success-bg:    #DFF6DD;
+  --status-warning:       #BC4B00;
+  --status-warning-bg:    #FFF4CE;
+  --status-danger:        #C42B1C;
+  --status-danger-bg:     #FDE7E9;
+  --status-info:          #0F6CBD;
+  --status-info-bg:       #EBF3FC;
+
+  /* Depth (Fluent shadow tokens — paired ambient + key) */
+  --depth-2:  0 0 2px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.14);
+  --depth-4:  0 0 2px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.14);
+  --depth-8:  0 0 2px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.14);
+  --depth-16: 0 0 2px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.14);
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Typography */
+  --font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI",
+                 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:   "Cascadia Code", "Cascadia Mono", Consolas, Menlo, monospace;
+}
+
+/* ---------- Reset / globals ---------- */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- M365 / Purview suite header ---------- */
+.m365-suite-bar {
+  height: 48px;
+  background: #0B1F44;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  gap: 0;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: 0 1px 0 rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.08);
+  position: sticky; top: 0; z-index: 40;
+  font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+.m365-suite-bar .waffle-btn {
+  width: 48px; height: 48px;
+  background: transparent; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; padding: 0;
+  transition: background .15s ease;
+  flex-shrink: 0;
+}
+.m365-suite-bar .waffle-btn:hover { background: rgba(255,255,255,.10); }
+.m365-suite-bar .waffle-btn:focus-visible {
+  outline: 2px solid #fff; outline-offset: -3px;
+}
+.m365-suite-bar .waffle-icon {
+  width: 16px; height: 16px;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 4px);
+  grid-template-rows:    repeat(3, 4px);
+  gap: 2px;
+}
+.m365-suite-bar .waffle-icon i {
+  background: #FFFFFF; border-radius: 1px; display: block;
+}
+.m365-suite-bar .brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 0 14px 0 8px;
+  height: 100%;
+  white-space: nowrap;
+}
+.m365-suite-bar .brand .ms-logo {
+  width: 19px; height: 19px; display: block; flex-shrink: 0;
+}
+.m365-suite-bar .brand-text {
+  font-size: 15px;
+  letter-spacing: 0;
+  line-height: 1;
+  color: #FFFFFF;
+}
+.m365-suite-bar .brand-text .ms   { font-weight: 400; opacity: .95; }
+.m365-suite-bar .brand-text .prod { font-weight: 600; }
+.m365-suite-bar .bar-sep {
+  width: 1px; height: 24px;
+  background: rgba(255,255,255,.22);
+  flex-shrink: 0;
+}
+.m365-suite-bar .product-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 14px;
+  height: 100%;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: rgba(255,255,255,.92);
+  white-space: nowrap;
+}
+.m365-suite-bar .pv-icon { width: 14px; height: 14px; display: block; flex-shrink: 0; }
+.m365-suite-bar .spacer { flex: 1; }
+.m365-suite-bar .suite-action {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500;
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,.28);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.m365-suite-bar .suite-action:hover {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.45);
+}
+.m365-suite-bar .suite-action svg { opacity: .9; }
+
+/* ---------- Page shell ---------- */
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+/* ---------- Page header ---------- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 16px;
+}
+header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+header .ver {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* ---------- Intro / cards ---------- */
+.intro {
+  background: var(--surface);
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--depth-2);
+}
+.intro h2 {
+  margin-top: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.intro p {
+  margin: .4em 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.intro a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.intro a:hover { text-decoration: underline; }
+
+section.card {
+  background: var(--surface);
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--depth-2);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+section.card:hover {
+  border-color: var(--stroke-base);
+  box-shadow: var(--depth-4);
+}
+section.card h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.005em;
+}
+section.card h3 .num {
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---------- Form controls ---------- */
+.field { margin-bottom: 14px; }
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+label .hint {
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+input[type=text], input[type=password], textarea, select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--stroke-base);
+  border-bottom-color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+input:hover, textarea:hover, select:hover {
+  border-color: var(--stroke-strong);
+  border-bottom-color: var(--text-primary);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  border-bottom-width: 2px;
+  padding-bottom: 6px;
+}
+input[readonly] {
+  background: var(--canvas-alt);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  border-bottom-color: var(--stroke-base);
+}
+
+.help {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.help a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.help a:hover { text-decoration: underline; }
+
+.row { display: flex; gap: 12px; }
+.row .field { flex: 1; }
+
+/* ---------- Provider picker ---------- */
+.providers {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.providers label.choice {
+  position: relative;
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface);
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.providers label.choice:hover {
+  border-color: var(--brand-primary);
+  background: var(--brand-bg-subtle);
+}
+.providers input[type=radio] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0; height: 0;
+  margin: 0;
+}
+.providers .prov-logo {
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: #F7F9FC;
+  border: 1px solid var(--stroke-subtle);
+  transition: background .15s ease, border-color .15s ease;
+}
+.providers .prov-logo svg { width: 24px; height: 24px; display: block; }
+.providers label.choice .meta { min-width: 0; }
+.providers label.choice .name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.providers label.choice .desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+.providers input[type=radio]:checked ~ .meta .name { color: var(--brand-primary); }
+.providers label.choice:has(input:checked) {
+  border-color: var(--brand-primary);
+  background: var(--brand-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--brand-primary);
+}
+.providers label.choice:has(input:checked) .prov-logo {
+  background: #FFFFFF;
+  border-color: var(--brand-primary);
+}
+.providers label.choice:has(input:focus-visible) {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* Coming-soon provider treatment — visually de-emphasises a choice but keeps
+   it on the grid so users see the roadmap. Pointer-events disabled so hover/
+   focus styles don't kick in and the radio cannot be activated. */
+.providers label.choice.coming-soon {
+  opacity: .55;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--canvas-alt);
+  filter: grayscale(.25);
+}
+.providers label.choice.coming-soon .prov-logo {
+  background: #EEF2F6;
+  filter: grayscale(.35);
+}
+.providers label.choice.coming-soon .name {
+  color: var(--text-tertiary);
+}
+.providers label.choice .coming-soon-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: #92400E;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* ---------- Toggle (checkbox row) ---------- */
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  margin: 6px 0;
+  padding: 6px 0;
+}
+.toggle input[type=checkbox] {
+  width: 16px; height: 16px;
+  margin-top: 3px;
+  accent-color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+/* ---------- Provider conditional fieldset ---------- */
+.provider-fields {
+  display: none;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--stroke-subtle);
+}
+.provider-fields.active { display: block; }
+
+/* ---------- Actions row + buttons ---------- */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--stroke-subtle);
+}
+
+button.primary {
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  border: 1px solid var(--brand-primary);
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+  min-height: 32px;
+}
+button.primary:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+button.primary:active {
+  background: var(--brand-pressed);
+  border-color: var(--brand-pressed);
+}
+button.primary:disabled {
+  background: var(--canvas-alt);
+  border-color: var(--stroke-base);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+/* ---------- Status banners ---------- */
+.az-status {
+  background: var(--status-warning-bg);
+  border: 1px solid #F5C879;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--status-warning);
+  margin-bottom: 12px;
+}
+.az-status.ok {
+  background: var(--status-success-bg);
+  border-color: #9CD89C;
+  color: var(--status-success);
+}
+
+/* ---------- Log / console window ---------- */
+.log {
+  background: #1F1F1F;
+  color: #E5E5E5;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  height: 520px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  border: 1px solid #2D2D2D;
+}
+.log .err  { color: #F1707B; }
+.log .warn { color: #FCE100; }
+.log .ok   { color: #6CCB5F; }
+.log .info { color: #75B6E7; }
+.log .cmd  { color: #C586C0; }
+
+/* ---------- Status pills (Fluent badge) ---------- */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+.status-pill.running   { background: var(--status-info-bg);    color: var(--status-info); }
+.status-pill.succeeded { background: var(--status-success-bg); color: var(--status-success); }
+.status-pill.failed    { background: var(--status-danger-bg);  color: var(--status-danger); }
+
+/* ---------- Tables ---------- */
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.result-table th, .result-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--stroke-subtle);
+  font-size: 13px;
+}
+.result-table th {
+  background: var(--canvas-alt);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.result-table tbody tr:hover { background: var(--brand-bg-subtle); }
+
+/* ---------- Snippet (code block) ---------- */
+.snippet {
+  background: #1F1F1F;
+  color: #E5E5E5;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-x: auto;
+  position: relative;
+  border: 1px solid #2D2D2D;
+}
+.snippet code {
+  color: #9DDCA6;
+  white-space: pre;
+  display: block;
+}
+.snippet .copy-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: rgba(255,255,255,.08);
+  color: #E5E5E5;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  font-size: 11.5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s ease;
+}
+.snippet .copy-btn:hover { background: rgba(255,255,255,.16); }
+.snippet .copy-btn.copied {
+  background: var(--status-success);
+  border-color: var(--status-success);
+  color: #FFF;
+}
+
+/* ---------- Lists ---------- */
+.next-list { margin: 0; padding-left: 1.2em; }
+.next-list li { margin-bottom: 6px; }
+
+/* ---------- Alerts ---------- */
+.alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  margin-bottom: 14px;
+  border: 1px solid;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.alert.warn {
+  background: var(--status-warning-bg);
+  border-color: #F5C879;
+  color: var(--status-warning);
+}
+.alert.err {
+  background: var(--status-danger-bg);
+  border-color: #F1AAB0;
+  color: var(--status-danger);
+}
+.alert.ok {
+  background: var(--status-success-bg);
+  border-color: #9CD89C;
+  color: var(--status-success);
+}
+
+/* ---------- Wizard / stepper ---------- */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 22px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--depth-2);
+}
+.stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  flex: 0 0 auto;
+  transition: color .25s ease;
+}
+.stepper-item.active {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+.stepper-item.done {
+  color: var(--status-success);
+}
+.stepper-item.done .stepper-num {
+  background: var(--status-success);
+  color: #FFF;
+  border-color: var(--status-success);
+  animation: stepDone .35s cubic-bezier(.34,1.56,.64,1);
+}
+.stepper-item.active .stepper-num {
+  background: var(--brand-primary);
+  color: #FFF;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(15,108,189,.18);
+  animation: stepPulse .45s cubic-bezier(.34,1.56,.64,1);
+}
+.stepper-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--canvas-alt);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12.5px;
+  border: 1px solid var(--stroke-subtle);
+  transition: background .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+@keyframes stepPulse {
+  0%   { transform: scale(.85); box-shadow: 0 0 0 0 rgba(15,108,189,.45); }
+  60%  { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(15,108,189,.10); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(15,108,189,.18); }
+}
+@keyframes stepDone {
+  0%   { transform: scale(.85); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.stepper-sep {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, var(--status-success) 0%, var(--status-success) var(--fill, 0%), var(--stroke-subtle) var(--fill, 0%), var(--stroke-subtle) 100%);
+  border-radius: 2px;
+  min-width: 16px;
+  transition: --fill .4s ease;
+}
+/* Fallback for browsers that don't yet animate custom properties: drive width via
+   a JS-set --fill (handled in goStep()). The gradient above renders the value
+   even without registration. */
+
+.wizard-step {
+  display: none;
+  opacity: 0;
+  transform: translateX(calc(var(--enter-dir, 1) * 18px));
+}
+.wizard-step.active {
+  display: block;
+  opacity: 1;
+  transform: none;
+  animation: wizardEnter .38s cubic-bezier(.22,.61,.36,1);
+}
+.wizard-step.leaving {
+  display: block;
+  pointer-events: none;
+  animation: wizardLeave .22s cubic-bezier(.55,.06,.68,.19) forwards;
+}
+@keyframes wizardEnter {
+  from { opacity: 0; transform: translateX(calc(var(--enter-dir, 1) * 18px)); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wizardLeave {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateX(calc(var(--enter-dir, 1) * -12px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step.active, .wizard-step.leaving,
+  .stepper-item.active .stepper-num, .stepper-item.done .stepper-num {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- Identity picker / account rows ---------- */
+.acct-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.acct-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--surface);
+  transition: all .15s ease;
+}
+.acct-row:hover {
+  border-color: var(--brand-primary);
+  background: var(--brand-bg-subtle);
+}
+.acct-row.acct-active {
+  border-color: var(--brand-primary);
+  background: var(--brand-bg-subtle);
+}
+.acct-row.acct-chosen {
+  border-color: var(--status-success);
+  background: var(--status-success-bg);
+  box-shadow: inset 0 0 0 1px var(--status-success);
+}
+.acct-row input[type=radio] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: auto;
+  accent-color: var(--brand-primary);
+}
+.acct-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  font-size: 13.5px;
+}
+.acct-meta .acct-user { font-weight: 600; color: var(--text-primary); }
+.acct-meta .acct-tenant,
+.acct-meta .acct-sub  { color: var(--text-secondary); font-size: 12.5px; }
+.acct-meta code {
+  background: var(--canvas-alt);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.acct-meta .acct-warn {
+  color: var(--status-warning);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.acct-badge {
+  align-self: center;
+  padding: 2px 8px;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Modal (login picker) ---------- */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+.modal-card {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  max-width: 480px;
+  width: 92%;
+  box-shadow: var(--depth-16);
+  border: 1px solid var(--stroke-subtle);
+}
+.modal-card h3 {
+  margin-top: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ---------- Fieldset (Bedrock-target radio etc.) ---------- */
+fieldset {
+  border: 1px solid var(--stroke-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 12px 0;
+  background: var(--canvas-alt);
+}
+fieldset legend {
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Scrollbars (subtle Fluent style on Webkit) ---------- */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--stroke-base);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-clip: padding-box; background: var(--stroke-strong); }
+
+/* ---------- v1.11 Quick wins: Purview accent + collapsible help + page-title polish ---------- */
+
+/* Purview gradient stripe — sits at the top edge of the intro card and the
+   stepper card. Echoes Purview/Fluent blue→teal palette. */
+.intro,
+.stepper {
+  position: relative;
+  overflow: hidden;
+}
+.intro::before,
+.stepper::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    #0F6CBD 0%,    /* Purview blue */
+    #1976D2 25%,   /* Fluent communication blue */
+    #00B7C3 65%,   /* Purview teal */
+    #5C2E91 100%   /* Microsoft purple accent */
+  );
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* The active wizard-step card gets a slimmer matching stripe so the user's
+   eye keeps tracking the same brand color through the flow. */
+.wizard-step.active > section.card:first-of-type {
+  position: relative;
+}
+.wizard-step.active > section.card:first-of-type::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0F6CBD 0%, #00B7C3 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* Page-title hierarchy (separates title from subtitle). */
+.intro .page-title {
+  margin: 4px 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.intro .page-subtitle {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+.intro .intro-actions {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+/* Collapsible help/details disclosures. Used for long explanatory paragraphs
+   so first-time users can drill in, repeat users see a clean form. */
+details.intro-details,
+details.help-disclosure {
+  margin: 6px 0 10px;
+}
+details.intro-details > summary,
+details.help-disclosure > summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--brand-primary);
+  background: var(--brand-bg-subtle, #EFF4FB);
+  border: 1px solid var(--stroke-subtle);
+  border-radius: 999px;
+  list-style: none;                 /* hide default disclosure triangle */
+  user-select: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+details.intro-details > summary::-webkit-details-marker,
+details.help-disclosure > summary::-webkit-details-marker { display: none; }
+details.intro-details > summary::before,
+details.help-disclosure > summary::before {
+  content: "▸";
+  font-size: 10px;
+  transition: transform .2s ease;
+  display: inline-block;
+}
+details[open].intro-details > summary::before,
+details[open].help-disclosure > summary::before {
+  transform: rotate(90deg);
+}
+details.intro-details > summary:hover,
+details.help-disclosure > summary:hover {
+  background: #E1ECF7;
+  border-color: var(--brand-primary);
+}
+details.intro-details[open],
+details.help-disclosure[open] {
+  padding-bottom: 4px;
+}
+details.intro-details[open] > p,
+details.help-disclosure[open] > p {
+  margin: 8px 0 4px;
+}
+
+/* A tighter variant of .help that drops the visual weight a touch — used on
+   step-intro paragraphs that are short enough to keep visible. */
+.help.help-tight {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- v1.12: Indeterminate progress indicator ----------
+   Sleek Fluent-style linear progress bar. A 35%-wide gradient pill slides
+   across the track on a 1.4s loop. Use anywhere you have an async wait
+   whose duration is unpredictable. Wrap in .progress-shell to get a label
+   above it. */
+.progress-shell {
+  display: block;
+  margin: 8px 0 4px;
+}
+.progress-shell .phase-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.005em;
+  transition: opacity .25s ease;
+}
+.progress-shell .phase-label::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #0F6CBD;
+  box-shadow: 0 0 0 0 rgba(15,108,189,.45);
+  animation: phaseDotPulse 1.8s ease-in-out infinite;
+}
+@keyframes phaseDotPulse {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(15,108,189,.45); }
+  50%      { transform: scale(1.2); box-shadow: 0 0 0 5px rgba(15,108,189,0);  }
+}
+.progress-indeterminate {
+  position: relative;
+  height: 3px;
+  background: var(--stroke-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-indeterminate::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 0;
+  width: 35%;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    rgba(15,108,189,0)    0%,
+    rgba(15,108,189,.85) 35%,
+    rgba(0,183,195,.85)  70%,
+    rgba(0,183,195,0)   100%);
+  animation: progressSlide 1.4s cubic-bezier(.4,0,.2,1) infinite;
+  will-change: transform;
+}
+@keyframes progressSlide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(330%); }
+}
+/* Reduced-motion fallback: static partially-filled bar with no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .progress-indeterminate::before {
+    animation: none;
+    width: 65%;
+    background: linear-gradient(90deg, #0F6CBD, #00B7C3);
+  }
+  .progress-shell .phase-label::before {
+    animation: none;
+  }
+}
